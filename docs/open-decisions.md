@@ -74,7 +74,7 @@ The 15 categories from prompt §4 are proposed as-is for v1.0 (see `docs/system-
 
 ---
 
-## D9 — Pilot repository selection (Phase 3 pre-requisite) — **candidates confirmed representative (2026-08-26), final pick deferred**
+## D9 — Pilot repository selection (Phase 3 pre-requisite) — **DECIDED (2026-08-26)**
 
 Candidates representative of the portfolio's main stacks, confirmed as such during the Phase 0 review:
 
@@ -82,7 +82,7 @@ Candidates representative of the portfolio's main stacks, confirmed as such duri
 - **Summit-Stats** — Laravel + Vue 3 + Docker, covers the PHP side.
 - **JobFlow** — small, focused Python CLI, useful to check the framework doesn't over-penalize a deliberately minimal tool.
 
-**Decision needed:** final pilot pick still deferred to the start of Phase 3 (not blocking Phase 0/1) — the candidate list itself is no longer open.
+**Decided:** **GeoChallenge-Tracker** is the Phase 3 pilot, chosen for exercising the widest slice of the taxonomy in a single pass (FastAPI + MongoDB + Vue 3, DESIGN.md, CI, codecov). Summit-Stats and JobFlow stay as reserve candidates for a targeted cross-check if the GeoChallenge-Tracker run leaves parts of the framework (PHP-specific tooling, or the deliberately-minimal-tool case) under-exercised.
 
 ---
 

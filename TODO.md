@@ -39,7 +39,7 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 
 ## Phase 3 — Calibration on a pilot repository
 
-- [ ] Select the pilot repository
+- [x] Select the pilot repository (GeoChallenge-Tracker, see `docs/open-decisions.md#d9`)
 - [ ] Run a full audit against it
 - [ ] Review criteria relevance, false positives/negatives, weights, effort
 - [ ] Correct the framework based on findings
