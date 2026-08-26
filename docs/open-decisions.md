@@ -129,3 +129,11 @@ Also decided: category 10 is flagged as a Phase 2 split candidate ("API design q
 Raised during the point-by-point review of `docs/system-design.md`§8 (confidence system): the "known false-positive pattern" language had no concrete data-model support.
 
 **Decided:** `Finding` gains an optional `human_verdict` field (`UNREVIEWED`/`TRUE_POSITIVE`/`FALSE_POSITIVE`), set via the dashboard using the same `human_confirmation`-type `Evidence` mechanism as the criterion-level confirmation gate (D11), but applied per individual finding. Verdicts are aggregated per (tool, rule) pair across audit history; a rule with a significant rejection rate has its baseline `Finding` confidence downgraded for future audits. Full definition in `docs/system-design.md#5` and `#8`.
+
+---
+
+## D15 — External network access for dependency freshness checks — **DECIDED (2026-08-26)**
+
+Raised during Phase 1 toolchain evaluation of the Security domain: `pip-audit`/`pnpm audit`/`composer audit` only detect known CVEs on pinned versions, not staleness (a dependency several majors behind, or abandoned, with no CVE filed). Checking freshness (`pip list --outdated`, `npm outdated`/`pnpm outdated`, `composer outdated`) requires querying the relevant package registry (PyPI, npm, Packagist) for the latest available version — a network dependency distinct from the GitHub API covered by D6.
+
+**Decided:** allow read-only access to public package registries (PyPI, npm, Packagist) to check dependency freshness, opt-in per run (same mechanism as D6, e.g. `--allow-registry-lookup`), not enabled by default. No authentication, no write scope. Feeds category 11 (Dependency management), whose detailed criteria are still deferred to Phase 2 per D8.

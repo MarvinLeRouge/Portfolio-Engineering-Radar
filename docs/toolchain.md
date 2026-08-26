@@ -1,0 +1,149 @@
+# Toolchain — Phase 1
+
+> Status: in progress. Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
+> Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see `docs/open-decisions.md#d7`.
+> **npx safety rule (found 2026-08-26, see Architecture/dependencies below):** npm lets a package publish a CLI binary under any name, independent of the package name — `npx <bin-name>` resolves by *bin name*, which is a dependency-confusion vector if an unrelated (or malicious) package happens to claim that same bin name in the registry. Always invoke as `npx --package=<exact-npm-package-name> -- <bin-name>`, never bare `npx <bin-name>`, for every ephemeral npx-based tool in this document, including ones already validated above before this rule was found (`tsc`, whose package is `typescript`, not `tsc`).
+
+---
+
+## Security
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| Semgrep | `uvx semgrep` — works directly, clean JSON output | LGPL 2.1 | **Keep** |
+| Gitleaks | No `npx`/`uvx` wrapper (Go binary) — via Docker `zricethezav/gitleaks` | MIT | **Keep**, with a required config decision (below) |
+| Trivy (filesystem scan) | No `npx`/`uvx` wrapper — via Docker `aquasec/trivy` | Apache 2.0 | **Keep** |
+| pip-audit | `uvx pip-audit -r requirements.txt` fails: uv-managed Python builds ship without `ensurepip`, so the tool's internal ephemeral venv creation crashes. Workaround: `uvx --python /usr/bin/python3.13 pip-audit ...` (forces the system Python, which has `ensurepip`) | Apache 2.0 | **Keep**, with the `--python` workaround documented as required config |
+| `pnpm audit` | Native (pnpm already present), works directly, JSON | part of pnpm | **Keep** |
+| `composer audit` | Native (composer already present), works directly, JSON | part of Composer | **Keep** |
+
+**Config decision (validated 2026-08-26):** Gitleaks must scan **tracked Git history** (default mode), never `--no-git` raw filesystem scanning. Smoke-tested against JobFlow: a raw filesystem scan flagged real credential files (`token.json`, `credentials.json`, etc.) as "leaks" even though they are correctly gitignored and never committed — a filesystem-mode scan produces false positives on legitimately untracked local secrets. Scanning Git history avoids this entirely, since it only sees what was actually committed.
+
+---
+
+## Dependency freshness (category 11)
+
+Distinct from the Security domain's CVE-based audits above: these tools flag dependencies that are outdated but not necessarily vulnerable (no CVE filed). Detailed category-11 criteria are still deferred to Phase 2 (`docs/open-decisions.md#d8`); this is only the toolchain candidate list.
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| `pip list --outdated` | Native (part of pip), run inside an ephemeral venv — see config decision below | MIT (pip) | **Keep**, with the lock-file caveat below |
+| `npm outdated` / `pnpm outdated` | Native (npm/pnpm already present) — `npm outdated --json` smoke-tested on GeoChallenge-Tracker, `pnpm outdated --format json` on HiveMind, both clean structured output | part of npm/pnpm | **Keep** |
+| `composer outdated` | Native (composer already present) — `composer outdated --format=json` smoke-tested on Summit-Stats, clean output, bonus `release-age`/`abandoned`/`latest-status` fields | part of Composer | **Keep** |
+
+**Config decision (2026-08-26, see `docs/open-decisions.md#d15`):** all three require a network call to a public package registry (PyPI, npm, Packagist) to know the latest available version. Gated behind the same opt-in-per-run mechanism as GitHub API access (D6), read-only, not enabled by default.
+
+**`pip list --outdated` needs an ephemeral resolved environment, not just the requirements file (smoke-tested 2026-08-26):**
+- Unlike the other two, `pip list --outdated` only reports on an *installed* environment — there's no way to check a `requirements.txt`/lock file directly against PyPI without installing it somewhere first.
+- Correct ephemeral pattern (consistent with D7): `uv export --frozen --no-hashes -o <scratch>/reqs.txt` (read-only export from the target's own `uv.lock`) → `uv pip install --python <scratch-venv> -r <scratch>/reqs.txt` → `uv pip list --python <scratch-venv> --outdated`. Verified on Triton (has `uv.lock`): correctly reports pinned-vs-latest for all 70 packages.
+- **Pitfall found and avoided:** `uv sync --python <scratch-venv>` does **not** honor `--python` the way `uv pip install` does — it installs into the *target repo's own* `.venv` regardless (would have written into Triton if no `.venv` existed there yet). Do not use `uv sync` for this check; use `uv export` + `uv pip install --python` instead, which stays entirely inside the scratch venv.
+- **Limitation:** this check is only meaningful for repos with a real lock file (`uv.lock`, `poetry.lock`, or `requirements.txt` with exact `==` pins). Smoke-tested on JobFlow (loose `>=` constraints, no lock file): an ephemeral `uv pip install` from `requirements.txt` always resolves to the latest version satisfying the constraint, so `pip list --outdated` on that fresh install is trivially empty — there is nothing pinned to compare against the registry. For unpinned repos, this criterion should report `N/A` rather than a false "up to date".
+
+---
+
+## Python
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| Ruff | `uvx ruff check --output-format=json` — works directly | MIT | **Keep** |
+| mypy | `uvx mypy --ignore-missing-imports` — works directly, plausible findings | MIT | **Keep** |
+| pytest | `uvx --with-requirements requirements.txt pytest ...` — works, correctly collects/runs the target repo's own tests | MIT | **Keep**, with a noted distinction below |
+| coverage | `uvx coverage` — works directly | Apache 2.0 | **Keep** |
+| radon (complexity) | `uvx radon cc --json` — works directly, structured cyclomatic-complexity output with rank | MIT | **Keep** |
+
+**Noted distinction:** unlike Ruff/mypy (pure static analysis, need only the target's source), pytest/coverage need the target repo's **own runtime dependencies installed** to actually execute its test suite — that's unavoidable, not a D7 violation. D7 only pins the *audit tool's own* version; the target's dependency versions for running its tests come from its own lockfile/`requirements.txt`, exactly as intended. Ephemeral install of those deps works via `uvx --with-requirements <file> pytest ...`.
+
+---
+
+## JavaScript / TypeScript
+
+Smoke-tested on GeoChallenge-Tracker (Vue 3 + TS, `node_modules` already installed locally).
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| ESLint | `npx eslint . --format json` — resolves to the repo's own local ESLint binary/config (`node_modules/.bin/eslint`), clean JSON output | MIT | **Keep** |
+| `tsc --noEmit` | `npx tsc --noEmit` — works, exit code 0/non-zero, no native JSON reporter (text output, `file(line,col): error TSxxxx: message` format, needs text parsing) | Apache-2.0 | **Keep** |
+| knip (dead dependencies/exports) | `npx knip --reporter json` — ephemeral download via npx, clean JSON `issues` array | ISC | **Keep** |
+| Vitest | `npx vitest run --reporter=json` — works, correctly collects/runs the target repo's own test suite (419/419 passed on GeoChallenge-Tracker), clean JSON | MIT | **Keep**, same runtime-dependency distinction as pytest/coverage above |
+| Playwright | Present as `test:e2e` script, needs `build:test` + a running server + installed browsers first — heavier and more stateful than a static audit tool | Apache-2.0 | **Keep as candidate**, not smoke-tested this session; invocation strategy (build step, ephemeral server, headless-only) deferred to Phase 2 criterion definition |
+
+**Note on ESLint config respect:** per the candidate-list intent (`docs/system-design.md#12`), ESLint runs with the target repo's **own** config as *input data*, not overridden by the audit system — the audit measures whether the repo's own linter (whatever rules it declares) passes, not whether it matches some external house style.
+
+---
+
+## PHP
+
+Smoke-tested on Summit-Stats (Laravel + Pint + Pest, the portfolio's only in-scope PHP repo).
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| PHPStan | Not a Summit-Stats devDependency — installed ephemerally via an isolated Composer project (`composer require phpstan/phpstan` in a scratch dir, run its `vendor/bin/phpstan` against the target path), consistent with D7 (audit tool pins its own version, independent of the target's own tooling) | MIT | **Keep**, with a required config decision below |
+| Laravel Pint | Native (already a Summit-Stats devDependency) — `vendor/bin/pint --test --format=json` → clean `{"result":"pass"}` | MIT | **Keep** |
+| Pest (built on PHPUnit) | Native (already a Summit-Stats devDependency) — `vendor/bin/pest --testsuite=Unit --log-junit=<file>` → 71/71 passed, standard JUnit XML (no native JSON reporter, same text/XML-parsing situation as `tsc`) | MIT (Pest) / BSD-3-Clause (PHPUnit) | **Keep** |
+
+**Config decision needed:** PHPStan at default level 5 with no Laravel-aware extension raised 44 findings on Summit-Stats' `app/`, the bulk being false positives on Eloquent magic properties/methods (`Access to an undefined property App\Models\Activity::$id`, `Call to an undefined static method App\Models\User::first()`) that PHPStan can't resolve without Laravel's dynamic model metadata. Mirrors the Gitleaks git-history decision: running PHPStan "raw" against a Laravel app produces noise that isn't a real finding. Candidate fix: add `larastan/larastan` to the ephemeral PHPStan install (a Laravel-aware extension) — not yet smoke-tested, needed before this tool is trusted for scoring.
+
+**Note on Pint/Pest native install:** unlike PHPStan (audit-system-owned, ephemeral, independent of the target), Pint and Pest here are the target repo's **own** pinned devDependencies, run natively via `vendor/bin/`, the same pattern already validated for `composer audit`/`composer outdated`. This is intentional, not an inconsistency: style/test tools measure *the repo's own configured behavior*, the same reasoning already applied to ESLint above — whereas PHPStan (and Ruff/mypy) are pure external static analysis, run at an audit-system-controlled version so score stability (D7) isn't at the mercy of whether the target repo bothers to pin/update its own linter.
+
+---
+
+## Architecture / dependencies (category 11 sub-scope: cycles, layering)
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| madge (JS/TS, originally proposed) | `npx --package=madge -- madge --extensions ts --json <dir>` — works cleanly on a pure-TS subtree (`frontend/src/utils` on GeoChallenge-Tracker), but **hard-fails** with a parser crash as soon as the scanned tree includes a `.vue` SFC (confirmed on `frontend/src`) | MIT | **Reject** — no native Vue SFC support, and all three JS/TS repos in scope (GeoChallenge-Tracker, HexaRot, HiveMind) are Vue-based |
+| dependency-cruiser (replacement) | `npx --package=dependency-cruiser -- depcruise --no-config --include-only "^frontend/src" --output-type json <dir>` — works cleanly across the full tree, correctly recognizes `.vue` SFCs as graph nodes (26/109 modules on GeoChallenge-Tracker), reports `circular`/`orphan` per module | MIT | **Keep**, replaces madge for the JS/TS side |
+| pydeps (Python) | `uvx pydeps <package> --show-deps --no-output --max-bacon=0` (or `--show-cycles`) — works directly, structured JSON, tested on Triton's `engine` package | Apache 2.0 | **Keep** |
+| import-linter (Python) | `uvx import-linter` — runs, but it's a **rules-enforcement** tool, not a generic cycle detector: it does nothing without a target-authored `.importlinter`/`setup.cfg` config declaring architectural "contracts" (layers). None of the in-scope Python repos (Triton, JobFlow, Stamped) define one | Apache 2.0 | **Reject** for the generic portfolio toolchain — nothing to evaluate without repo-authored config; revisit per-repo only if one adds a contract file later |
+| deptrac (PHP) | Ephemeral install via isolated Composer project (same pattern as PHPStan) — `deptrac analyse` requires a target-authored `deptrac.yaml`/`depfile.yaml` declaring layers. Summit-Stats has none; confirmed via `CannotLoadConfiguration` error | MIT | **Reject** for the generic portfolio toolchain, same rationale as import-linter |
+
+**Near-miss found during this smoke test:** `npx depcruise` (bare bin name) almost resolved to an unrelated npm package literally named `depcruise` — confirmed via `npm view depcruise` to be a registered *dependency-confusion placeholder* (`🚫 Placeholder to prevent dependency confusion`, published specifically to squat the bin name ahead of bad actors), not the real `dependency-cruiser` tool. No harm done here since the placeholder is inert, but it demonstrates the risk described in the npx safety rule at the top of this document was live, not theoretical. All ephemeral `npx` invocations in this document (past and future) must use `--package=<exact-name> --`.
+
+**Pattern for import-linter/deptrac going forward:** both tools are legitimate and worth re-offering as an *opt-in* criterion in Phase 2 — e.g. "if this repo defines its own architectural contract file, is it being respected?" — rather than a portfolio-wide generic check, since authoring the contract itself is a repo-specific design decision the audit system shouldn't make on the developer's behalf.
+
+---
+
+## Containers
+
+Both tools are Go/Haskell binaries with no `uvx`/`npx` wrapper — run via Docker, per D7.
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| Hadolint (Dockerfile lint) | `docker run --rm -i hadolint/hadolint hadolint --format json - < Dockerfile` — smoke-tested on GeoChallenge-Tracker's `backend/Dockerfile`, 3 plausible low-noise findings (unpinned `apt-get`/`pip` versions, missing `--no-cache-dir`) | **GPL-3.0** | **Keep**, license note below |
+| Trivy (image scan) | `docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --format json --severity HIGH,CRITICAL --scanners vuln <image>` — smoke-tested against the already-built local image `geochallenge-tracker-backend:latest`, found 194 Debian OS-package + 7 Python-package HIGH/CRITICAL CVEs, plausible | Apache 2.0 | **Keep**, requires access to the local Docker daemon socket |
+
+**License note:** Hadolint is GPL-3.0, stricter (copyleft) than every other tool validated so far (MIT/Apache/BSD/ISC). Not a concern here: the audit system only *invokes* Hadolint as an external subprocess via its own Docker image, it never links or embeds Hadolint's code into the audit system's own codebase, so GPL's copyleft/distribution clauses don't attach. No different in principle from calling any other CLI tool.
+
+**Image-scan precondition:** unlike Hadolint (works on the Dockerfile source, always available), `trivy image` needs an already-**built** image. It was tested here against an image already present from prior local `docker compose` usage — the audit system does **not** build images itself as a side effect of scanning (that would be a heavier, more invasive step than a static/config-only audit tool should take). If a repo has no locally built image at audit time, this check should report `N/A` rather than triggering a build.
+
+**Dockerfile/compose discovery pitfall found (2026-08-26):** naive `find . -iname Dockerfile*` on Summit-Stats surfaced 9 Dockerfiles, most of them noise: `vendor/laravel/sail/runtimes/*/Dockerfile` (third-party package internals, not the repo's own infra) and duplicates under `.claude/worktrees/*/vendor/...` (a stale worktree copy). Discovery must exclude `vendor/`, `node_modules/`, and any `.git`-worktree-style nested directory — scanning only the repo's own top-level/service Dockerfiles, not vendored or duplicated copies.
+
+---
+
+## Git / CI
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| actionlint | No `uvx`/`npx` wrapper (Go binary) — via Docker: `docker run --rm -v <repo>:/repo -w /repo rhysd/actionlint:latest -format '{{json .}}'` — auto-discovers `.github/workflows/` with no path argument needed, smoke-tested on GeoChallenge-Tracker, 2 real findings (embedded `shellcheck` issue: unquoted variable enabling globbing/word-splitting in a `run:` step) | MIT | **Keep** |
+| Branch protection / PR review requirements / Actions run history | Not local-`.git`-derivable — needs the GitHub API | — | Deferred to D6 (opt-in, read-only GitHub API access), not part of the local static toolchain |
+
+**Bonus found:** actionlint bundles `shellcheck` analysis for inline `run:` shell scripts inside workflow steps, so a single tool catches both YAML-workflow-syntax issues and shell-scripting issues in the embedded scripts, without needing a separate shellcheck invocation.
+
+---
+
+## Pre-commit hooks (feeds the D12 criterion: coverage matrix)
+
+Not a single "run and get findings" tool — D12 needs the coverage-**content** (which validator types cover which domains), not just presence/absence of a hook framework. Smoke-tested by reading real configs across the in-scope repos that use each framework: `.pre-commit-config.yaml` (5 repos: CC-Beacon, GeoChallenge-Tracker, JobFlow, Stamped, Triton) and `.husky/` (3 repos: HexaRot, HiveMind, Summit-Stats). No in-scope repo uses `lefthook.yml`.
+
+| Framework | Evidence extraction | Verdict |
+|---|---|---|
+| `pre-commit` (Python ecosystem) | Config is fully declarative in `.pre-commit-config.yaml` — each hook's `id`/`name` and `files` regex directly give (validator type, domain) pairs. `uvx pre-commit validate-config` confirms the file is schema-valid (exit 0 on GeoChallenge-Tracker) as a cheap sanity check before parsing | **Keep** — YAML parsing alone is sufficient, no need to actually execute the hooks |
+| `husky` | **Not self-contained.** `.husky/pre-commit` is typically a one-line shell wrapper (`npx lint-staged` on both HexaRot and Summit-Stats) — it names *no* validator itself. The real (validator type × domain) matrix lives one hop away, in `package.json`'s `"lint-staged"` key (glob pattern → command list per pattern) | **Keep**, but extraction **must chain two files**: `.husky/<hook-name>` → confirm it delegates to `lint-staged` → then read `package.json`'s `lint-staged` key for the actual matrix. Reading `.husky/` alone gives a false "covered" or "empty" signal |
+| `lefthook` | No in-scope repo uses it — config format (`lefthook.yml`) is declarative YAML like `pre-commit`, so the same direct-parsing approach should apply, but this is **unverified**, not smoke-tested | **Keep as candidate**, verify against a real config if/when one appears in scope |
+
+**Concrete coverage-matrix results found (useful as worked examples for the D12 criterion definition in Phase 2):**
+- GeoChallenge-Tracker (`.pre-commit-config.yaml`): backend gets ruff (lint) + ruff-format (format) + mypy (type-check); frontend gets prettier (format) + eslint (lint) + vue-tsc (type-check) — full matrix, all 6 applicable cells covered.
+- HexaRot (husky → lint-staged): backend and frontend both get eslint (lint) only — no format or type-check hook on either domain, 2/6 cells covered.
+- Summit-Stats (husky → lint-staged): frontend gets eslint (lint) + prettier (format); PHP backend gets Pint (format only, no PHPStan wired into the hook) — 3/6 cells covered (using the 3-validator-type model; Pint straddles lint/format in practice for PHP, worth a definitional note in Phase 2).
+
+---
