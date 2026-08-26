@@ -16,6 +16,8 @@
 | pip-audit | `uvx pip-audit -r requirements.txt` fails: uv-managed Python builds ship without `ensurepip`, so the tool's internal ephemeral venv creation crashes. Workaround: `uvx --python /usr/bin/python3.13 pip-audit ...` (forces the system Python, which has `ensurepip`) | Apache 2.0 | **Keep**, with the `--python` workaround documented as required config |
 | `pnpm audit` | Native (pnpm already present), works directly, JSON | part of pnpm | **Keep** |
 | `composer audit` | Native (composer already present), works directly, JSON | part of Composer | **Keep** |
+| Semgrep, authN/authZ ruleset (category 4.6a gap) | Not evaluated yet — same `uvx semgrep` binary already validated above, with registry rulesets targeting auth misconfigurations (`p/security-audit` and framework-specific packs) | LGPL 2.1 | **Keep as candidate**, not smoke-tested. Coverage likely uneven across the portfolio's actual frameworks (FastAPI, Laravel, Vue/Node) — to verify per-stack at smoke-test |
+| mdn-http-observatory (category 4.6b gap) | Not evaluated yet — npm-installable, `mdn-http-observatory-scan <url>` against a running server, produces a graded score (CSP, HSTS, X-Frame-Options, cookies, CORS, etc.), translatable onto the 0/2/4/6/8/10 anchored scale | MPL-2.0 (to confirm at smoke-test) | **Keep as candidate**, not smoke-tested. Needs a running server, same precondition class as Lighthouse/Playwright. Fallback candidate: `shcheck` (MIT, `santoru/shcheck`), lighter but less authoritative (presence-only check, no graded methodology) |
 
 **Config decision (validated 2026-08-26):** Gitleaks must scan **tracked Git history** (default mode), never `--no-git` raw filesystem scanning. Smoke-tested against JobFlow: a raw filesystem scan flagged real credential files (`token.json`, `credentials.json`, etc.) as "leaks" even though they are correctly gitignored and never committed — a filesystem-mode scan produces false positives on legitimately untracked local secrets. Scanning Git history avoids this entirely, since it only sees what was actually committed.
 
@@ -32,6 +34,14 @@ Distinct from the Security domain's CVE-based audits above: these tools flag dep
 | `composer outdated` | Native (composer already present) — `composer outdated --format=json` smoke-tested on Summit-Stats, clean output, bonus `release-age`/`abandoned`/`latest-status` fields | part of Composer | **Keep** |
 
 **Config decision (2026-08-26, see `docs/open-decisions.md#d15`):** all three require a network call to a public package registry (PyPI, npm, Packagist) to know the latest available version. Gated behind the same opt-in-per-run mechanism as GitHub API access (D6), read-only, not enabled by default.
+
+**License compliance (category 11.2 gap, researched 2026-08-26) — unlike freshness above, none of these three need a network call**, since license metadata is already present in the target's own installed/locked packages — not gated behind D15/D6.
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| `pip-licenses` | Not evaluated yet — likely `uvx pip-licenses --format=json`, but needs the target's dependencies actually installed to enumerate their license metadata, same ephemeral-venv precondition as `pip list --outdated` (`uv export` + `uv pip install --python <scratch-venv>`) | MIT | **Keep as candidate**, not smoke-tested. Original tool, confirmed actively maintained again in 2026 (new maintainer, PEP 639 alignment work) — preferred over the `pip-licenses-cli` fork since the original is no longer the unmaintained one it once was |
+| `license-checker-evergreen` | Not evaluated yet — likely `npx --package=license-checker-evergreen -- license-checker-evergreen --json`, reads `node_modules` package metadata directly, no network call | Same license as upstream `license-checker` (BSD-3-Clause family, to confirm at smoke-test) | **Keep as candidate**, not smoke-tested. Original `license-checker` (davglass) unmaintained since 2019; this fork is explicitly positioned as the actively-maintained drop-in replacement, preferred over `license-checker-rseidelsohn` (maintainer self-describes it as under-maintained) |
+| `composer licenses --format=json` | Native (composer already present, same tool already validated for `composer audit`/`composer outdated`) — no new dependency at all | part of Composer | **Keep**, no smoke-test risk, reuses an already-validated native command |
 
 **`pip list --outdated` needs an ephemeral resolved environment, not just the requirements file (smoke-tested 2026-08-26):**
 - Unlike the other two, `pip list --outdated` only reports on an *installed* environment — there's no way to check a `requirements.txt`/lock file directly against PyPI without installing it somewhere first.
@@ -50,6 +60,8 @@ Distinct from the Security domain's CVE-based audits above: these tools flag dep
 | pytest | `uvx --with-requirements requirements.txt pytest ...` — works, correctly collects/runs the target repo's own tests | MIT | **Keep**, with a noted distinction below |
 | coverage | `uvx coverage` — works directly | Apache 2.0 | **Keep** |
 | radon (complexity) | `uvx radon cc --json` — works directly, structured cyclomatic-complexity output with rank | MIT | **Keep** |
+| vulture (dead code) | Not evaluated yet — likely `uvx vulture <path>`, same ephemeral pattern as radon | MIT | **Keep as candidate**, not smoke-tested; actively maintained (2026 releases), reports a per-finding confidence (60-100%) worth surfacing as-is rather than smoothed away, per its own documented static-analysis limitation (may miss implicitly-called code) |
+| docvet (docstring coverage, category 5.3 gap) | Not evaluated yet — likely `uvx docvet <path>`, same ephemeral pattern | MIT | **Keep as candidate**, not smoke-tested. Preferred over `interrogate` (older, more established, but a competing 2026 tool explicitly claims it's unmaintained — to verify directly against `econchick/interrogate`'s recent commit activity before trusting either). docvet is newer/less proven but actively released in 2026 and covers presence + staleness (git-diff/blame) rather than presence alone |
 
 **Noted distinction:** unlike Ruff/mypy (pure static analysis, need only the target's source), pytest/coverage need the target repo's **own runtime dependencies installed** to actually execute its test suite — that's unavoidable, not a D7 violation. D7 only pins the *audit tool's own* version; the target's dependency versions for running its tests come from its own lockfile/`requirements.txt`, exactly as intended. Ephemeral install of those deps works via `uvx --with-requirements <file> pytest ...`.
 
@@ -69,6 +81,14 @@ Smoke-tested on GeoChallenge-Tracker (Vue 3 + TS, `node_modules` already install
 
 **Note on ESLint config respect:** per the candidate-list intent (`docs/system-design.md#12`), ESLint runs with the target repo's **own** config as *input data*, not overridden by the audit system — the audit measures whether the repo's own linter (whatever rules it declares) passes, not whether it matches some external house style.
 
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| ESLint `complexity` rule, audit-owned config (cyclomatic complexity, category 2.3/5.1/15.2 gap) | Not evaluated yet — same ESLint binary already validated above, invoked with an **audit-authored** config (`--no-eslintrc -c <audit-config>`) enabling only the `complexity` rule, independent of the repo's own `.eslintrc` | MIT (ESLint) | **Keep as candidate**, not smoke-tested. Deliberately not the target's own config here (unlike 2.1/2.2 above) — same "audit-owned, config-independent" logic already applied to radon for Python, so a repo can't inflate its complexity score just by not configuring the rule. Rejected alternative: dedicated npm packages (e.g. `cyclomatic-complexity`) are newer, less established, license not confirmed — reusing the already-validated ESLint binary is lower-risk |
+
+| Spectral (OpenAPI contract linting, category 10.2 gap) | Not evaluated yet — `npx --package=@stoplight/spectral-cli -- spectral lint <spec-file> --format json`, built-in `spectral:oas` ruleset covers OpenAPI v2/v3 | Apache 2.0 | **Keep as candidate**, not smoke-tested. Precondition is lighter than Lighthouse/mdn-http-observatory: needs an already-exported OpenAPI spec file (FastAPI: call `app.openapi()`, needs the target's own runtime deps installed, same precondition class as pytest; Laravel: an artisan generation command via L5-Swagger), not a running server |
+
+**Docstring coverage (category 5.3 gap): no candidate found for JS/TS.** Existing "coverage" tools in this ecosystem (`type-coverage`, `typescript-coverage-report`) measure TypeScript *type* coverage, not JSDoc *comment presence* — a different metric, not a substitute. Stays an open gap, not a pending-smoke-test candidate.
+
 ---
 
 ## PHP
@@ -80,10 +100,22 @@ Smoke-tested on Summit-Stats (Laravel + Pint + Pest, the portfolio's only in-sco
 | PHPStan | Not a Summit-Stats devDependency — installed ephemerally via an isolated Composer project (`composer require phpstan/phpstan` in a scratch dir, run its `vendor/bin/phpstan` against the target path), consistent with D7 (audit tool pins its own version, independent of the target's own tooling) | MIT | **Keep**, with a required config decision below |
 | Laravel Pint | Native (already a Summit-Stats devDependency) — `vendor/bin/pint --test --format=json` → clean `{"result":"pass"}` | MIT | **Keep** |
 | Pest (built on PHPUnit) | Native (already a Summit-Stats devDependency) — `vendor/bin/pest --testsuite=Unit --log-junit=<file>` → 71/71 passed, standard JUnit XML (no native JSON reporter, same text/XML-parsing situation as `tsc`) | MIT (Pest) / BSD-3-Clause (PHPUnit) | **Keep** |
+| PHPMD (complexity + dead code, category 2.3/5.1/15.2 gap) | Not evaluated yet — likely ephemeral isolated Composer install (same pattern as PHPStan), `vendor/bin/phpmd <path> text codesize,unusedcode` | BSD | **Keep as candidate**, not smoke-tested. Single tool covers two gaps at once: `codesize` ruleset for cyclomatic complexity (default threshold 10), `unusedcode` ruleset for dead code (unused private methods/properties/variables) |
+| php-censor/phpdoc-checker (docblock coverage, category 5.3 gap) | Not evaluated yet — likely ephemeral isolated Composer install (same pattern as PHPStan), `vendor/bin/phpdoc-checker` with JSON output | BSD-2-Clause | **Keep as candidate**, not smoke-tested. Fork of the original `dancryer/php-docblock-checker`, checks classes/methods for docblock presence |
 
 **Config decision needed:** PHPStan at default level 5 with no Laravel-aware extension raised 44 findings on Summit-Stats' `app/`, the bulk being false positives on Eloquent magic properties/methods (`Access to an undefined property App\Models\Activity::$id`, `Call to an undefined static method App\Models\User::first()`) that PHPStan can't resolve without Laravel's dynamic model metadata. Mirrors the Gitleaks git-history decision: running PHPStan "raw" against a Laravel app produces noise that isn't a real finding. Candidate fix: add `larastan/larastan` to the ephemeral PHPStan install (a Laravel-aware extension) — not yet smoke-tested, needed before this tool is trusted for scoring.
 
 **Note on Pint/Pest native install:** unlike PHPStan (audit-system-owned, ephemeral, independent of the target), Pint and Pest here are the target repo's **own** pinned devDependencies, run natively via `vendor/bin/`, the same pattern already validated for `composer audit`/`composer outdated`. This is intentional, not an inconsistency: style/test tools measure *the repo's own configured behavior*, the same reasoning already applied to ESLint above — whereas PHPStan (and Ruff/mypy) are pure external static analysis, run at an audit-system-controlled version so score stability (D7) isn't at the mercy of whether the target repo bothers to pin/update its own linter.
+
+---
+
+## Code duplication (category 2.5 gap, cross-language)
+
+Unlike the complexity/dead-code gaps above (separate tool per language), a single candidate covers the whole portfolio's language mix.
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| jscpd | Not evaluated yet — likely `npx --package=jscpd -- jscpd <path> --reporters json` (v4, Node-based) or a prebuilt v5 Rust binary (no Node runtime needed) | MIT (to confirm at smoke-test) | **Keep as candidate**, not smoke-tested. Single tool for Python/JS-TS/PHP/Vue (223+ languages via Prism grammars), widely adopted (Microsoft, Salesforce, bundled in super-linter/Codacy), actively developed in 2026 (v5 Rust rewrite, 24-37x faster than v4). Rejected alternative: PMD-CPD also covers Python/PHP/JS, but needs a JVM runtime — an extra dependency class no other tool in this toolchain requires (uvx/npx/composer/Docker only), with no clear advantage over jscpd for this portfolio's languages |
 
 ---
 
@@ -117,6 +149,16 @@ Both tools are Go/Haskell binaries with no `uvx`/`npx` wrapper — run via Docke
 **Image-scan precondition:** unlike Hadolint (works on the Dockerfile source, always available), `trivy image` needs an already-**built** image. It was tested here against an image already present from prior local `docker compose` usage — the audit system does **not** build images itself as a side effect of scanning (that would be a heavier, more invasive step than a static/config-only audit tool should take). If a repo has no locally built image at audit time, this check should report `N/A` rather than triggering a build.
 
 **Dockerfile/compose discovery pitfall found (2026-08-26):** naive `find . -iname Dockerfile*` on Summit-Stats surfaced 9 Dockerfiles, most of them noise: `vendor/laravel/sail/runtimes/*/Dockerfile` (third-party package internals, not the repo's own infra) and duplicates under `.claude/worktrees/*/vendor/...` (a stale worktree copy). Discovery must exclude `vendor/`, `node_modules/`, and any `.git`-worktree-style nested directory — scanning only the repo's own top-level/service Dockerfiles, not vendored or duplicated copies.
+
+---
+
+## Performance (frontend only — category 6, see `docs/quality-framework.md`§4.6)
+
+Backend/DB performance is deliberately excluded from Quality Framework v1.0 (no objective definition without a per-project SLA) — not a toolchain gap, no candidate evaluated here. Frontend has one plausible candidate, listed for Phase-2-triggered validation, not yet smoke-tested this session.
+
+| Tool | Availability | License | Verdict |
+|---|---|---|---|
+| Lighthouse | Not evaluated yet — likely `npx --package=lighthouse -- lighthouse <url> --output json`, same class of precondition as Playwright (needs a running server, a build step, headless Chrome) | Apache 2.0 | **Keep as candidate**, not smoke-tested; known open doubts (reproducibility of the score run-to-run, narrow load-time-only scope) carried in `quality-framework.md`§4.6, to revisit before this criterion is trusted at more than MEDIUM confidence |
 
 ---
 

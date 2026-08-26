@@ -31,11 +31,11 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 
 ## Phase 2 — Final definition of categories, rules, criteria, scoring
 
-- [ ] Finalize the taxonomy (categories + justified adjustments)
-- [ ] Define measurable criteria per category (objective, evidence, tools, levels, weight, dependencies, confidence, false positives)
-- [ ] Define the hierarchical scoring model (criterion → category → global)
-- [ ] Define critical penalties, N/A handling, missing-data handling
-- [ ] Freeze **Quality Framework v1.0**
+- [x] Finalize the taxonomy (categories + justified adjustments)
+- [x] Define measurable criteria per category (objective, evidence, tools, levels, weight, dependencies, confidence, false positives)
+- [x] Define the hierarchical scoring model (criterion → category → global)
+- [x] Define critical penalties, N/A handling, missing-data handling
+- [x] Freeze **Quality Framework v1.0**
 
 ## Phase 3 — Calibration on a pilot repository
 
