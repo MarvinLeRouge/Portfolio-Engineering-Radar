@@ -40,9 +40,9 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 ## Phase 3 — Calibration on a pilot repository
 
 - [x] Select the pilot repository (GeoChallenge-Tracker, see `docs/open-decisions.md#d9`)
-- [ ] Run a full audit against it
-- [ ] Review criteria relevance, false positives/negatives, weights, effort
-- [ ] Correct the framework based on findings
+- [x] Run a full audit against it (manual pass, see `docs/pilot-audit-geochallenge-tracker.md`)
+- [x] Review criteria relevance, false positives/negatives, weights, effort
+- [x] Correct the framework based on findings (Gitleaks P1 pre-filter, mypy/ESLint/knip invocation fixes)
 - [ ] Confirm Quality Framework v1.0 as the reference for the first global audit
 
 ## Phase 4 — System implementation
