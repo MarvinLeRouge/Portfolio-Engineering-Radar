@@ -25,9 +25,9 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 
 ## Phase 1 — Toolchain discovery and selection
 
-- [ ] Evaluate candidate tools per language/domain (security, Python, JS/TS, PHP, architecture/dependencies, containers, Git/CI)
-- [ ] Validate local availability and licensing of retained tools
-- [ ] Document the final toolchain and rejected alternatives
+- [x] Evaluate candidate tools per language/domain (security, Python, JS/TS, PHP, architecture/dependencies, containers, Git/CI)
+- [x] Validate local availability and licensing of retained tools
+- [x] Document the final toolchain and rejected alternatives
 
 ## Phase 2 — Final definition of categories, rules, criteria, scoring
 
