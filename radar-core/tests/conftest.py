@@ -14,11 +14,15 @@ ALEMBIC_SCRIPT_LOCATION = ALEMBIC_INI.parent / "alembic"
 def _run_migrations(database_url: str) -> None:
     config = Config(str(ALEMBIC_INI))
     config.set_main_option("script_location", str(ALEMBIC_SCRIPT_LOCATION))
+    previous_url = os.environ.get("RADAR_DATABASE_URL")
     os.environ["RADAR_DATABASE_URL"] = database_url
     try:
         command.upgrade(config, "head")
     finally:
-        del os.environ["RADAR_DATABASE_URL"]
+        if previous_url is None:
+            del os.environ["RADAR_DATABASE_URL"]
+        else:
+            os.environ["RADAR_DATABASE_URL"] = previous_url
 
 
 @pytest.fixture
