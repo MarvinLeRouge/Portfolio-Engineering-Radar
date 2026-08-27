@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
-from radar_core.models.repository import UTCDateTime
+from radar_core.types import UTCDateTime
 
 
 # revision identifiers, used by Alembic.
