@@ -42,8 +42,9 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 - [x] Select the pilot repository (GeoChallenge-Tracker, see `docs/open-decisions.md#d9`)
 - [x] Run a full audit against it (manual pass, see `docs/pilot-audit-geochallenge-tracker.md`)
 - [x] Review criteria relevance, false positives/negatives, weights, effort
-- [x] Correct the framework based on findings (Gitleaks P1 pre-filter, mypy/ESLint/knip invocation fixes)
-- [ ] Confirm Quality Framework v1.0 as the reference for the first global audit
+- [x] Run a second pilot audit on a structurally different repo (Summit-Stats, Laravel/PHP + Vue/JS, see `docs/pilot-audit-summit-stats.md`) to check cross-repo consistency
+- [x] Correct the framework based on findings (Gitleaks P1 pre-filter and its `.env.*.example` broadening, mypy/ESLint/knip invocation fixes, Larastan in-repo install fix, isolated Composer scratch per PHP tool, generalized git-worktree exclusion, evidence-freshness rule)
+- [x] Confirm Quality Framework v1.0 as the reference for the first global audit
 
 ## Phase 4 — System implementation
 
