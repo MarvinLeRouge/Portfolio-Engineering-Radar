@@ -70,6 +70,7 @@ Reviewed and confirmed as-is, 2026-08-26. A defined, versioned set of conditions
 |---|---|---|---|---|
 | P1 | ≥1 confirmed secret found in tracked Git history | Gitleaks (git-history mode, per `toolchain.md`§Security) | Security | ≤ 2 |
 | — | **Pre-filter added at Phase 3 pilot calibration (GeoChallenge-Tracker, 2026-08-26):** a raw Gitleaks `generic-api-key` hit in a `tests?/`/`test_*` path, on a variable named `fake_*`/`mock_*`/`dummy_*`, is a strong test-fixture pattern (6/6 hits on this pilot matched it, all false positives on lines like `fake_token = "eyJ..."`) — such a hit is held at `PENDING_CONFIRMATION` (per the human-confirmation gate, `system-design.md`§8) rather than counted as a "confirmed secret" for P1 by default. This narrows what counts as "confirmed" for the purpose of this specific penalty; it does not change Gitleaks' own findings or the 4.2 criterion's raw evidence. | — | — |
+| — | **Pre-filter broadened at second pilot calibration (Summit-Stats, 2026-08-27):** the same false-positive class recurred, but on a different file pattern — a `generic-api-key` hit on `.env.prod.example` (a committed template file, matching a plausible-looking value like `BCRYPT_ROUNDS=12`, not a real secret). This confirms the pattern isn't specific to test-token naming. The pre-filter now also covers a hit whose file path matches `.env.*.example`/`.env.*.template`/`.env.*.sample` — held at `PENDING_CONFIRMATION` on the same basis as the test-fixture pattern above. | — | — |
 | P2 | ≥1 CRITICAL-severity CVE with a known fix version available and not applied | Trivy (fs/image) / pip-audit / `pnpm audit` / `composer audit` | Security | ≤ 4 |
 | P3 | A CI workflow exists and runs the test suite, but that job is failing on the default branch (not merely absent) | actionlint + CI-derived test-job status | Testing & reliability | ≤ 4 |
 | P4 | A pre-commit/CI quality gate is configured (D12 `DONE`/`IN_PROGRESS`) but errors of the exact type it's meant to block are present merged into the default branch | Ruff / ESLint / PHPStan findings cross-referenced against D12 evidence | Code quality | ≤ 5 |
@@ -83,6 +84,10 @@ Unchanged from `system-design.md`§7, made explicit at both levels: a criterion 
 ### 3.4 Missing-data handling
 
 Unchanged from `system-design.md`§7: a criterion that could not be evaluated (tool failed, no evidence available) is recorded as absent, not defaulted to 0 or to N/A, and the category's confidence is downgraded accordingly (§8 minimum-aggregation rule still applies).
+
+### 3.5 Evidence freshness
+
+Added at second Phase 3 pilot calibration (Summit-Stats, 2026-08-27). A criterion whose evidence *could* be read from a checked-in artifact (a committed `coverage.xml`, `coverage-summary.json`, or any other generated report file the target repo happens to track) must instead be evaluated from a **live run performed by the audit itself**, never from reading that artifact directly — even when it's present and its numbers look plausible. Confirmed case: Summit-Stats' committed `coverage.xml` showed 73.97% statement coverage, apparently below the repo's own 80% CI gate; a fresh `pest --coverage` run produced 91.4%, the committed file simply hadn't been regenerated since an earlier point in the repo's history. A stale artifact is indistinguishable from a fresh one by inspection alone, so this isn't a per-repo judgment call — it's a standing rule for any tool-generated evidence that can go stale between commits (coverage reports today; the same logic would apply to e.g. a committed SBOM or a committed dependency-audit snapshot if either is ever used as evidence). See `toolchain.md`'s Python section for the tool-level detail.
 
 ---
 
