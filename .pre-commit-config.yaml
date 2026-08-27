@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^radar-core/
+      - id: ruff-format
+        files: ^radar-core/
+  - repo: local
+    hooks:
+      - id: mypy-radar-core
+        name: mypy (radar-core)
+        entry: uv run --package radar-core mypy radar-core/src/radar_core
+        language: system
+        files: ^radar-core/src/
+        pass_filenames: false

@@ -82,6 +82,10 @@ Entity table, PK strategy = auto-increment integer everywhere (native SQLite `ro
 
 `Audit.commit_sha` + `Audit.is_dirty` (from `git status --porcelain`). A partial unique index `Audit(repository_id, commit_sha) WHERE is_dirty = 0` guarantees only one "clean" `Audit` per commit is reusable as a re-score base; dirty audits can accumulate freely since their `ToolResult`s are only valid for that exact instant and are never reused.
 
+### Relations: FK columns only, no ORM `Relationship()`
+
+The entity table above lists a "Relations" column derived from `docs/system-design.md#5`'s original entity proposal, but the implementation represents every one of those relations as a plain FK column (`Field(foreign_key=...)`) with no SQLModel/SQLAlchemy `Relationship()` attribute anywhere in `src/radar_core/models/`. Traversal (e.g. `Finding` → `Evidence`, `Category` → `Criterion`) is done via explicit joins/queries at the application layer instead of ORM-managed collections or lazy-loaded attributes. This was a deliberate, consistent choice across Tasks 5-10 (keeps the model files simple, avoids SQLAlchemy's session-bound lazy-loading pitfalls), but it was never recorded here as an explicit decision. It also supersedes the original "relationship cascades" wording in the Testing section below: there is no `Relationship()` to cascade, so what the test suite actually exercises is FK-referential integrity (see "Constraints, cascade, indices") and explicit application-level joins, not ORM cascade behavior.
+
 ### ImprovementTask vs RoadmapItem split
 
 `ImprovementTask` is born automatically during normalization (grouping `Finding`s into a unit of work). It only becomes a tracked `RoadmapItem` (status/priority/effort/impact) when explicitly promoted — matches Phase 6's two distinct steps ("convert findings into tasks" then "publish the living roadmap").
