@@ -5,6 +5,7 @@ from radar_core.models.methodology import Category, Criterion, MethodologyVersio
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import Score, ScoringRun
+from radar_core.models.snapshot import Snapshot
 
 __all__ = [
     "Audit",
@@ -20,5 +21,6 @@ __all__ = [
     "RoadmapItem",
     "Score",
     "ScoringRun",
+    "Snapshot",
     "ToolResult",
 ]
