@@ -1,4 +1,22 @@
+import pytest
 from radar_core.db import get_engine, get_session
+from radar_core.enums import ScoringModel
+from radar_core.models.methodology import Criterion
+from sqlalchemy.exc import IntegrityError
+
+
+def test_sqlite_foreign_keys_are_enforced(db_session):
+    orphan_criterion = Criterion(
+        category_id=999_999,
+        name="Orphan criterion",
+        description="References a category_id that does not exist",
+        weight=1.0,
+        scoring_model=ScoringModel.FIXED_SCALE,
+    )
+    db_session.add(orphan_criterion)
+
+    with pytest.raises(IntegrityError):
+        db_session.commit()
 
 
 def test_get_engine_binds_to_given_url(tmp_path):
