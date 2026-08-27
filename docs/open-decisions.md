@@ -137,3 +137,15 @@ Raised during the point-by-point review of `docs/system-design.md`§8 (confidenc
 Raised during Phase 1 toolchain evaluation of the Security domain: `pip-audit`/`pnpm audit`/`composer audit` only detect known CVEs on pinned versions, not staleness (a dependency several majors behind, or abandoned, with no CVE filed). Checking freshness (`pip list --outdated`, `npm outdated`/`pnpm outdated`, `composer outdated`) requires querying the relevant package registry (PyPI, npm, Packagist) for the latest available version — a network dependency distinct from the GitHub API covered by D6.
 
 **Decided:** allow read-only access to public package registries (PyPI, npm, Packagist) to check dependency freshness, opt-in per run (same mechanism as D6, e.g. `--allow-registry-lookup`), not enabled by default. No authentication, no write scope. Feeds category 11 (Dependency management), whose detailed criteria are still deferred to Phase 2 per D8.
+
+---
+
+## D16 — Phase 4 implementation-level stack choices — **DECIDED (2026-08-27)**
+
+D5 fixed the high-level stack (Vue 3 + FastAPI + SQLite, `docker compose up`) but left several implementation-level choices open before Phase 4 coding could start.
+
+**Decided:**
+- **Backend:** Python 3.12, dependency management via `uv` (consistent with the tooling already standardized across target repos, e.g. GeoChallenge-Tracker). ORM: **SQLModel** (SQLAlchemy + Pydantic fused) over separate SQLAlchemy/Pydantic layers, to avoid duplicating ~13 data-model entities across two representations, acceptable given the project is local-first and mono-developer. Migrations via **Alembic**. Tests via **pytest**. Pre-commit: `ruff` + `ruff-format` + `mypy`, dogfooding the D12 pre-commit criterion this very system audits elsewhere.
+- **Frontend:** Vue 3 + Vite + TypeScript, **Pinia** (state) + **Vue Router**, tests via **vitest**, pre-commit: `eslint` + `prettier` + `vue-tsc`. CSS: **Tailwind**.
+- **Traefik in front of `radar-api`/`radar-dashboard`:** applied for consistency with the portfolio-wide D11 standard, even though remote exposure of this tool is unlikely. Deliberate choice, not a default.
+- **Repo structure:** monorepo, sibling folders `radar-audit/`, `radar-api/`, `radar-dashboard/` at the root, alongside the existing `docs/`.
