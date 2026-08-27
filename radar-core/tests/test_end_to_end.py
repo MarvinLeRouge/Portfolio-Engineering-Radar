@@ -1,4 +1,6 @@
 # radar-core/tests/test_end_to_end.py
+from datetime import UTC
+
 from radar_core.enums import (
     Confidence,
     EvidenceType,
@@ -14,6 +16,7 @@ from radar_core.models.methodology import Category, Criterion, MethodologyVersio
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import Score, ScoringRun
+from radar_core.models.snapshot import Snapshot
 
 
 def test_full_audit_to_roadmap_chain(db_session):
@@ -131,7 +134,35 @@ def test_full_audit_to_roadmap_chain(db_session):
     roadmap_item.done_evidence_id = done_evidence.id
     db_session.add(roadmap_item)
     db_session.commit()
+    db_session.refresh(roadmap_item)
+
+    snapshot = Snapshot(
+        portfolio_global_score=2.0,
+        portfolio_global_confidence=Confidence.HIGH,
+        details={"repositories": [{"name": repo.name, "score": 2.0}]},
+    )
+    db_session.add(snapshot)
+    db_session.commit()
+    db_session.refresh(snapshot)
 
     assert roadmap_item.status == RoadmapStatus.DONE
     assert roadmap_item.done_evidence_id == done_evidence.id
     assert finding.tool_result_id == tool_result.id
+
+    # Every UTCDateTime column touched by this chain must round-trip as UTC-aware,
+    # not silently regress to a naive datetime.
+    for entity, field in (
+        (version, "frozen_at"),
+        (audit, "audited_at"),
+        (tool_result, "ran_at"),
+        (scoring_run, "scored_at"),
+        (finding, "detected_at"),
+        (evidence, "created_at"),
+        (recommendation, "created_at"),
+        (task, "created_at"),
+        (roadmap_item, "promoted_at"),
+        (snapshot, "taken_at"),
+    ):
+        value = getattr(entity, field)
+        assert value.tzinfo is not None, f"{type(entity).__name__}.{field} lost its tzinfo"
+        assert value.tzinfo == UTC, f"{type(entity).__name__}.{field} is not UTC"
