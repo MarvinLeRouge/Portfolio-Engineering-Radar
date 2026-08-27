@@ -8,9 +8,7 @@ def test_create_methodology_with_category_and_criterion(db_session):
     db_session.commit()
     db_session.refresh(version)
 
-    category = Category(
-        methodology_version_id=version.id, name="Security", weight=1.5, order=4
-    )
+    category = Category(methodology_version_id=version.id, name="Security", weight=1.5, order=4)
     db_session.add(category)
     db_session.commit()
     db_session.refresh(category)

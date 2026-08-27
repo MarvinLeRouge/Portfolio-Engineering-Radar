@@ -80,7 +80,7 @@ def test_improvement_task_links_to_finding_via_association_table(db_session):
 
 
 def test_improvement_task_is_not_a_roadmap_item_until_promoted(db_session):
-    finding = _make_finding(db_session)
+    _make_finding(db_session)
     task = ImprovementTask(title="Rotate leaked credential", description="See finding evidence.")
     db_session.add(task)
     db_session.commit()
@@ -88,9 +88,12 @@ def test_improvement_task_is_not_a_roadmap_item_until_promoted(db_session):
 
     from sqlmodel import select
 
-    assert db_session.exec(
-        select(RoadmapItem).where(RoadmapItem.improvement_task_id == task.id)
-    ).first() is None
+    assert (
+        db_session.exec(
+            select(RoadmapItem).where(RoadmapItem.improvement_task_id == task.id)
+        ).first()
+        is None
+    )
 
 
 def test_roadmap_item_promotion_with_done_evidence(db_session):

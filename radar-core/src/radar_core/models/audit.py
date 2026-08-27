@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import JSON, Column, Index, text
 from sqlmodel import Field, SQLModel
@@ -28,7 +29,7 @@ class Audit(SQLModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(UTCDateTime()),
     )
-    network_flags: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    network_flags: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
 
 
 class ToolResult(SQLModel, table=True):
@@ -39,7 +40,7 @@ class ToolResult(SQLModel, table=True):
     tool_name: str = Field(index=True)
     tool_version: str
     command: str
-    raw_output: dict = Field(sa_column=Column(JSON))
+    raw_output: dict[str, Any] = Field(sa_column=Column(JSON))
     exit_code: int
     ran_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),

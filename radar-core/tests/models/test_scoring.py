@@ -1,11 +1,10 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
-
 from radar_core.enums import Confidence, ScoreLevel, ScoringModel
 from radar_core.models.audit import Audit
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
+from sqlalchemy.exc import IntegrityError
 
 
 def _make_audit_and_methodology(db_session):
@@ -47,7 +46,9 @@ def test_create_scoring_run_with_scores(db_session):
     audit, version, category, criterion = _make_audit_and_methodology(db_session)
 
     scoring_run = ScoringRun(
-        audit_id=audit.id, methodology_version_id=version.id, global_score=7.5,
+        audit_id=audit.id,
+        methodology_version_id=version.id,
+        global_score=7.5,
         global_confidence=Confidence.HIGH,
     )
     db_session.add(scoring_run)

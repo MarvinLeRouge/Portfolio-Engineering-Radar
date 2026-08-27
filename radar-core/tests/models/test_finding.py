@@ -1,6 +1,4 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
-
 from radar_core.enums import (
     Confidence,
     EvidenceType,
@@ -14,6 +12,7 @@ from radar_core.models.finding import Evidence, Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import ScoringRun
+from sqlalchemy.exc import IntegrityError
 
 
 def _make_scoring_run_and_criterion(db_session):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SAEnum
@@ -22,4 +23,4 @@ class Snapshot(SQLModel, table=True):
     portfolio_global_confidence: Confidence = Field(
         sa_column=Column(SAEnum(Confidence), nullable=False)
     )
-    details: dict = Field(sa_column=Column(JSON))
+    details: dict[str, Any] = Field(sa_column=Column(JSON))

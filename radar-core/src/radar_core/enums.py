@@ -1,24 +1,24 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class ScoringModel(str, Enum):
+class ScoringModel(StrEnum):
     FIXED_SCALE = "FIXED_SCALE"
     STATUS_4STATE = "STATUS_4STATE"
 
 
-class ScoreLevel(str, Enum):
+class ScoreLevel(StrEnum):
     CRITERION = "CRITERION"
     CATEGORY = "CATEGORY"
     GLOBAL = "GLOBAL"
 
 
-class Confidence(str, Enum):
+class Confidence(StrEnum):
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
     LOW = "LOW"
 
 
-class FindingSeverity(str, Enum):
+class FindingSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -26,25 +26,25 @@ class FindingSeverity(str, Enum):
     INFO = "INFO"
 
 
-class FindingStatus(str, Enum):
+class FindingStatus(StrEnum):
     OPEN = "OPEN"
     RESOLVED = "RESOLVED"
     WONT_FIX = "WONT_FIX"
 
 
-class HumanVerdict(str, Enum):
+class HumanVerdict(StrEnum):
     UNREVIEWED = "UNREVIEWED"
     TRUE_POSITIVE = "TRUE_POSITIVE"
     FALSE_POSITIVE = "FALSE_POSITIVE"
 
 
-class EvidenceType(str, Enum):
+class EvidenceType(StrEnum):
     TOOL_OUTPUT_EXCERPT = "TOOL_OUTPUT_EXCERPT"
     HUMAN_CONFIRMATION = "HUMAN_CONFIRMATION"
     EXTERNAL_REFERENCE = "EXTERNAL_REFERENCE"
 
 
-class RoadmapStatus(str, Enum):
+class RoadmapStatus(StrEnum):
     TODO = "TODO"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"

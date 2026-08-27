@@ -1,8 +1,7 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
-
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.repository import Repository
+from sqlalchemy.exc import IntegrityError
 
 
 def _make_repository(db_session) -> Repository:

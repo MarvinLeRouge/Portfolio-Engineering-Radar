@@ -4,9 +4,8 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlmodel import Session
-
 from radar_core.db import get_engine
+from sqlmodel import Session
 
 ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
 ALEMBIC_SCRIPT_LOCATION = ALEMBIC_INI.parent / "alembic"

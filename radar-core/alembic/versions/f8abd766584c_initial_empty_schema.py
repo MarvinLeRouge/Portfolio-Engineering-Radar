@@ -1,17 +1,13 @@
 """initial empty schema
 
 Revision ID: f8abd766584c
-Revises: 
+Revises:
 Create Date: 2026-08-27 16:58:56.984270
 
 """
-from alembic import op
-import sqlalchemy as sa
-import sqlmodel
-
 
 # revision identifiers, used by Alembic.
-revision = 'f8abd766584c'
+revision = "f8abd766584c"
 down_revision = None
 branch_labels = None
 depends_on = None
