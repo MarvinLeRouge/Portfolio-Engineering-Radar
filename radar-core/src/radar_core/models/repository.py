@@ -16,5 +16,5 @@ class Repository(SQLModel, table=True):
     path: str = Field(unique=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(UTCDateTime()),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )

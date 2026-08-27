@@ -27,9 +27,11 @@ class Audit(SQLModel, table=True):
     is_dirty: bool = False
     audited_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(UTCDateTime()),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
-    network_flags: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    network_flags: dict[str, Any] = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
 
 
 class ToolResult(SQLModel, table=True):
@@ -40,10 +42,10 @@ class ToolResult(SQLModel, table=True):
     tool_name: str = Field(index=True)
     tool_version: str
     command: str
-    raw_output: dict[str, Any] = Field(sa_column=Column(JSON))
+    raw_output: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
     exit_code: int
     ran_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(UTCDateTime()),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     duration_ms: int

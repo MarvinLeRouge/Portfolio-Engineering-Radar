@@ -17,7 +17,7 @@ class MethodologyVersion(SQLModel, table=True):
     version_label: str = Field(unique=True, index=True)
     frozen_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(UTCDateTime()),
+        sa_column=Column(UTCDateTime(), nullable=False),
     )
     notes: str | None = None
 
@@ -40,4 +40,14 @@ class Criterion(SQLModel, table=True):
     name: str
     description: str
     weight: float
-    scoring_model: ScoringModel = Field(sa_column=Column(SAEnum(ScoringModel), nullable=False))
+    scoring_model: ScoringModel = Field(
+        sa_column=Column(
+            SAEnum(
+                ScoringModel,
+                create_constraint=True,
+                validate_strings=True,
+                name="ck_criterion_scoring_model_valid",
+            ),
+            nullable=False,
+        )
+    )

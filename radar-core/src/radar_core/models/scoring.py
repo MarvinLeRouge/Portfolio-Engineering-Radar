@@ -22,11 +22,20 @@ class ScoringRun(SQLModel, table=True):
     audit_id: int = Field(foreign_key="audit.id", index=True)
     methodology_version_id: int = Field(foreign_key="methodology_version.id", index=True)
     scored_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), sa_column=Column(UTCDateTime())
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(UTCDateTime(), nullable=False)
     )
     global_score: float | None = None
     global_confidence: Confidence | None = Field(
-        default=None, sa_column=Column(SAEnum(Confidence), nullable=True)
+        default=None,
+        sa_column=Column(
+            SAEnum(
+                Confidence,
+                create_constraint=True,
+                validate_strings=True,
+                name="ck_scoring_run_global_confidence_valid",
+            ),
+            nullable=True,
+        ),
     )
 
 
@@ -37,7 +46,27 @@ class Score(SQLModel, table=True):
     scoring_run_id: int = Field(foreign_key="scoring_run.id", index=True)
     criterion_id: int | None = Field(default=None, foreign_key="criterion.id", index=True)
     category_id: int | None = Field(default=None, foreign_key="category.id", index=True)
-    level: ScoreLevel = Field(sa_column=Column(SAEnum(ScoreLevel), nullable=False))
+    level: ScoreLevel = Field(
+        sa_column=Column(
+            SAEnum(
+                ScoreLevel,
+                create_constraint=True,
+                validate_strings=True,
+                name="ck_score_level_valid",
+            ),
+            nullable=False,
+        )
+    )
     value: float
-    confidence: Confidence = Field(sa_column=Column(SAEnum(Confidence), nullable=False))
+    confidence: Confidence = Field(
+        sa_column=Column(
+            SAEnum(
+                Confidence,
+                create_constraint=True,
+                validate_strings=True,
+                name="ck_score_confidence_valid",
+            ),
+            nullable=False,
+        )
+    )
     na_reason: str | None = None
