@@ -20,12 +20,13 @@
 
 ## 2. Category-by-category scoring
 
-Only categories/criteria with direct evidence gathered this pass are scored. Criteria whose only candidate tool is "not smoke-tested" (per `toolchain.md`) stay `N/A`/gap, unchanged by this pilot. LLM-judgment criteria (1.4, 3.5, 10.1) need a dedicated visual/interpretive pass not done in this CLI-only run — left unscored, flagged in §4.
+Only categories/criteria with direct evidence gathered this pass are scored. Criteria whose only candidate tool is "not smoke-tested" (per `toolchain.md`) stay `N/A`/gap, unchanged by this pilot. LLM-judgment criteria 1.4 and 3.5 were evaluated in a follow-up code-reading pass (no new tooling, see below); 10.1 still needs a rendered-UI pass (browser) not done in this CLI-only run — left unscored, flagged in §4.
 
 ### 1. Architecture & design
 - 1.1 Dependency direction/circularity — **10** (0 cycles, both dependency-cruiser and pydeps clean)
 - 1.2 Architectural documentation — **10** (`DESIGN.md`, 1897 words, substantive)
 - 1.3 Module size distribution — not scored (JS/PHP tooling gap, per `toolchain.md`; Python side has radon data but no dedicated size-distribution threshold defined yet)
+- 1.4 Architectural style consistency — **4** (visibly mixed, not a single dominant style: 5/15 backend route files follow a clean thin-controller/service-delegation pattern with typed `response_model` — `auth.py`, `meta.py`, `my_challenge_progress.py`, `my_challenge_tasks.py`, `zones.py`; core-domain routes instead build MongoDB queries directly in the route handler and return untyped dicts — `caches.py` (6/6 routes, 0 `response_model`), `caches_elevation.py`, `caches_geocoding.py`, `referentials.py`; several files mix both patterns in the same file — `my_challenges.py`, `my_challenge_targets.py`, `my_profile.py`. Frontend shows the same split: composables (`useXData`) are used in most pages, but several of those same pages also call `api.get()` directly for auxiliary data instead of going through a composable — e.g. `Calendar.vue`, `Details.vue`, `Matrix.vue`, `Tasks.vue`.)
 
 ### 2. Code quality
 - 2.1 Linter clean pass rate — **10** (Ruff clean; ESLint's 42 errors are 100% false positives, see §3 — true pass rate on actual source is clean)
@@ -38,14 +39,15 @@ Only categories/criteria with direct evidence gathered this pass are scored. Cri
 - 3.1 Unit tests present & passing, with coverage — **10** (1291/1291 backend, 419/419 frontend, both green; coverage % not extracted this pass but both suites are substantial and green)
 - 3.4 CI executes the test suite — **10** (`ci.yml`: `backend-test` and `frontend-unit` jobs both run the real suites with coverage upload)
 - 3.3 E2E tests — **5 (IN_PROGRESS)** (Playwright configured, `test:e2e` script present, but not wired into `ci.yml` — matches the Phase 1 smoke-test note exactly)
+- 3.5 Test quality/relevance — **9** (sampled `test_dto_validation.py`, `test_calendar_verification.py` (backend) and `calendar-data.spec.ts` (frontend): assertions check precise computed values and real edge cases — leap-year day counts, duplicate-day dedup, completion-rate math, reactivity — not tautological truthy checks. Grep across the full suite found 0 backend `assert True`/bare-result patterns and only 4/598 frontend weak `toBeTruthy()`/`not.toThrow()` expectations out of 1861 backend and 598 frontend total assertions — meaningful assertions dominate. Caveat: 4 backend files — `_test_progress.py`, `_test_targets_smoke.py`, `_test_user_challenge_tasks_suite.py`, `_test_user_challenge_tasks_verbose.py`, 1228 lines total — are named with a leading underscore, so pytest never collects them; orphaned test code, cross-ref 15.2, doesn't affect the active suite's quality but is dead-code debt worth flagging separately)
 
 ### 4. Security
-- 4.1 Dependency vulnerabilities — **8** (pip-audit: 1 CVE, but already triaged and suppressed in CI with a documented, re-verified justification — `PYSEC-2026-1325`/ecdsa Minerva timing attack, not exploitable since the repo only signs JWTs with HS256; Trivy fs: 3 more, not yet cross-checked against fix availability for P2)
+- 4.1 Dependency vulnerabilities — **6** (pip-audit: 1 CVE, already triaged and suppressed in CI with a documented, re-verified justification — `PYSEC-2026-1325`/ecdsa Minerva timing attack, not exploitable since the repo only signs JWTs with HS256; `npm audit` (not run in the first pass): 2 HIGH, both with a fix available — `flowbite-vue` transitive dep and `nanoid`, fix requires a major-version bump not yet applied)
 - 4.2 Secrets in tracked history — **10** (0 real secrets; Gitleaks' 6 raw hits are the false-positive pattern in §3, none of which should trigger P1)
-- 4.4 Container image vulnerabilities — **2** (201 backend / 60 frontend HIGH+CRITICAL CVEs — largely base-image OS packages, not yet triaged for fix availability; conservatively low pending that triage, likely feeds P2 once cross-referenced)
+- 4.4 Container image vulnerabilities — **2 (uncapped: see below)** (backend image, Debian 13.6: 13 CRITICAL, 0 with a fix published yet — real but unactionable debt, doesn't trigger P2; frontend image, Alpine 3.23.3 + Node: **4 CRITICAL with a fix available and not applied** — `libcrypto3`, `libssl3`, `tar`, `esbuild`/stdlib — this is the concrete P2 trigger)
 - 4.5 Dockerfile hardening — **6** (3 Hadolint warnings: unpinned `apt-get`/`pip`, missing `--no-cache-dir`; plus Trivy misconfig: both Dockerfiles run as root, no `HEALTHCHECK`)
 
-**Critical penalty check (§3.2):** P1 does **not** trigger (0 real secrets, see §3). P2 needs the CRITICAL-with-fix-available cross-check not done this pass — flagged as a follow-up, not resolved here.
+**Critical penalty check (§3.2):** P1 does **not** trigger (0 real secrets, see §3). **P2 triggers**: the follow-up Trivy/fix-availability cross-check (flagged as open in the first pass) found 4 CRITICAL CVEs on the frontend image with a published fix not applied (rebuild against a patched Alpine + Node/esbuild base would clear them). Per `quality-framework.md`§3.2, category score is capped at **4** (uncapped average of the 4 scored criteria above: 6.0). This is a real confirmation of the P2 mechanism working as designed, not a theoretical clause.
 
 ### 7. DevOps / CI-CD
 - 7.1 CI presence & health — **10** (5-job `ci.yml`, all green paths; actionlint clean apart from 2 minor shellcheck notes)
@@ -111,8 +113,8 @@ Running `npx eslint .` from the repo root (rather than the repo's own `npm run l
 
 ## 4. Open items not resolved by this pass
 
-- **1.4, 3.5, 10.1 (LLM-judgment criteria)** — not evaluated. These need a dedicated interpretive pass (architectural-style consistency, test-quality judgment, graphic/visual design per D13), out of scope for a CLI-tool-only run. Worth doing as a second, narrower pilot pass before Phase 4 locks in the confirmation-gate UX for these.
-- **4.1/4.4 critical-penalty cross-check (P2)** — CVE counts were gathered, but not yet cross-referenced against "fix version available" to actually evaluate the P2 cap condition. Needs one more pass over the Trivy/pip-audit JSON already collected.
+- **10.1 (graphic design, D13)** — still not evaluated. Its factual layer (WCAG contrast, responsive breakpoints) needs the UI actually rendered — a browser pass, not just CLI tooling. 1.4 and 3.5 were resolved in a follow-up code-reading pass (no rendering needed, see §2) and no longer block Phase 3 sign-off; 10.1 is the one remaining interpretive gap.
+- **4.1/4.4 critical-penalty cross-check (P2)** — resolved this pass: cross-referenced Trivy image scans (backend + frontend) and `npm audit` against fix availability. Result: P2 triggers on the frontend image (4 CRITICAL with a fix available), Security category capped at 4. See §2.
 - **Category 6 (Performance)** — correctly out of scope for this pass: Lighthouse is an unvalidated candidate (stays a gap regardless of pilot results), backend/DB performance is deliberately excluded from v1.0 (`quality-framework.md`§4.6).
 - **11.1 (dependency freshness)** — correctly `N/A`: D15 registry-lookup opt-in wasn't exercised this run, not a framework problem.
 
