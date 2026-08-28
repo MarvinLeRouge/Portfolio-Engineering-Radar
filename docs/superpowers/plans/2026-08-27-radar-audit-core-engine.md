@@ -211,16 +211,7 @@ git commit -m "chore(radar-audit): scaffold workspace package"
 
 - [ ] **Step 1: Write the failing test**
 
-`radar-audit/tests/test_conftest_infra.py`:
-```python
-from pathlib import Path
-
-from sqlmodel import Session, select
-
-from radar_audit.tests_support import UNUSED  # placeholder import removed below
-```
-
-Since this task's own deliverable IS the test infrastructure other tasks will use, write the test directly against `git_helpers.py` and the `db_session` fixture:
+This task's own deliverable IS the test infrastructure other tasks will use, so the test is written directly against `git_helpers.py` and the `db_session` fixture:
 
 `radar-audit/tests/test_conftest_infra.py`:
 ```python
@@ -1850,11 +1841,11 @@ git commit -m "feat(radar-audit): tie discovery, taxonomy, and tool execution in
 
 `radar-audit/tests/test_cli.py`:
 ```python
-import os
-
+from sqlmodel import Session, select
 from typer.testing import CliRunner
 
 from radar_audit.cli import app
+from tests.conftest import RADAR_CORE_ROOT
 from tests.git_helpers import init_git_repo
 
 runner = CliRunner()
@@ -1889,10 +1880,6 @@ def test_run_without_repo_name_or_all_fails(tmp_path):
 
 
 def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
-    from sqlmodel import select
-
-    from radar_audit.tests_conftest_reuse import RADAR_CORE_ROOT  # see note below
-
     repo_path = tmp_path / "repos" / "sample-repo"
     init_git_repo(repo_path)
     config_path = _write_config(tmp_path, tmp_path / "repos", ["sample-repo"])
@@ -1923,12 +1910,6 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         assert len(results) == 1
         assert results[0].tool_name == "example-git-log"
 ```
-
-The third test imports `RADAR_CORE_ROOT` from a module that does not exist (`radar_audit.tests_conftest_reuse`) — fix this before running by importing the already-existing constant from the test suite's own `conftest.py` instead. Replace that import line with:
-```python
-from tests.conftest import RADAR_CORE_ROOT
-```
-and add `from sqlmodel import Session` to the top-level imports of `test_cli.py`.
 
 - [ ] **Step 2: Run test to verify it fails**
 

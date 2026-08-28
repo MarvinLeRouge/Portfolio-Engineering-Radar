@@ -1,0 +1,267 @@
+version_label: "Quality Framework v1.0"
+notes: "Frozen 2026-08-26, see docs/quality-framework.md"
+categories:
+  - name: "Architecture & design"
+    order: 1
+    weight: 6.15
+    criteria:
+      - name: "Dependency direction / circularity"
+        description: "dependency-cruiser (JS/TS), pydeps (Python) — cycle count. 0 cycles=10, 1-2=6, 3-5=4, >5=2"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+      - name: "Architectural documentation present"
+        description: "DESIGN.md/ARCHITECTURE.md/ADR presence and non-trivial length"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+      - name: "Module size distribution"
+        description: "radon (Python LOC/complexity proxy); JS/PHP: no dedicated tool validated yet, static LOC count only"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+      - name: "Consistency of architectural style"
+        description: "Narrow LLM-judgment layer, restricted to single dominant style vs. visibly mixed"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+  - name: "Code quality"
+    order: 2
+    weight: 6.15
+    criteria:
+      - name: "Linter clean pass rate"
+        description: "Ruff / ESLint / PHPStan, findings vs. files scanned"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+      - name: "Type-checking pass"
+        description: "mypy / tsc --noEmit / PHPStan"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+      - name: "Cyclomatic complexity"
+        description: "radon (Python, validated). JS: ESLint complexity rule (candidate). PHP: PHPMD codesize ruleset (candidate)"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+      - name: "Pre-commit quality gate"
+        description: "Pre-commit/CI lint-format-typecheck hooks configured (D12): DONE / IN_PROGRESS / TODO"
+        weight: 20.0
+        scoring_model: STATUS_4STATE
+      - name: "Code duplication"
+        description: "jscpd (candidate, single tool covering Python/JS-TS/PHP/Vue)"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+  - name: "Testing & reliability"
+    order: 3
+    weight: 10.0
+    criteria:
+      - name: "Unit tests present & passing, with coverage"
+        description: "pytest+coverage / Vitest / Pest, pass rate and coverage %"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+      - name: "Integration tests"
+        description: "Heuristic: test files under an integration-named path, or importing DB/HTTP layers"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+      - name: "E2E tests"
+        description: "Playwright present & wired into CI = DONE; present but not in CI = IN_PROGRESS; absent = TODO for web-facing repos, N/A for non-UI repos"
+        weight: 20.0
+        scoring_model: STATUS_4STATE
+      - name: "CI executes the test suite"
+        description: "actionlint-derived: a workflow step invokes pytest/Vitest/Pest"
+        weight: 20.0
+        scoring_model: STATUS_4STATE
+      - name: "Test quality / relevance"
+        description: "Narrow LLM-judgment layer (meaningful vs. tautological assertions)"
+        weight: 20.0
+        scoring_model: FIXED_SCALE
+  - name: "Security"
+    order: 4
+    weight: 10.0
+    criteria:
+      - name: "Dependency vulnerabilities (CVE)"
+        description: "pip-audit / pnpm audit / composer audit, severity-tiered. Feeds critical penalty P1 (docs/quality-framework.md 3.2)"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "Secrets in tracked history"
+        description: "Gitleaks, git-history mode. Feeds critical penalty P1 (docs/quality-framework.md 3.2)"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "SAST findings"
+        description: "Semgrep, severity-tiered"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "Container image vulnerabilities"
+        description: "Trivy image scan, HIGH/CRITICAL count. N/A if no locally built image."
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "Dockerfile hardening"
+        description: "Hadolint findings density"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "AuthN/authZ hygiene"
+        description: "Semgrep registry authN/authZ rulesets (p/security-audit + framework-specific packs), candidate"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+      - name: "HTTP security headers"
+        description: "mdn-http-observatory (candidate, runtime check); fallback candidate shcheck (presence-only)"
+        weight: 14.29
+        scoring_model: FIXED_SCALE
+  - name: "Maintainability"
+    order: 5
+    weight: 6.15
+    criteria:
+      - name: "Complexity hotspots"
+        description: "Shares evidence with cyclomatic complexity (2.3), distinct framing: flags outlier files rather than the repo-wide average"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Dead code / unused exports"
+        description: "knip (JS, validated). Python: vulture (candidate). PHP: PHPMD unusedcode ruleset (candidate)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Documentation-in-code (docstring/comment coverage)"
+        description: "Python: docvet (candidate). PHP: php-censor/phpdoc-checker (candidate). JS/TS: no candidate identified"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+  - name: "Performance"
+    order: 6
+    weight: 6.15
+    criteria:
+      - name: "Frontend performance"
+        description: "Lighthouse, score-tiered (90-100=10, 70-89=6-8, 50-69=4, <50=2/0). N/A for repos with no UI. Candidate, not yet smoke-tested. Backend/DB performance has no criterion in v1.0, deliberately excluded (docs/quality-framework.md 4.6)."
+        weight: 100.0
+        scoring_model: FIXED_SCALE
+  - name: "DevOps / CI-CD"
+    order: 7
+    weight: 6.15
+    criteria:
+      - name: "CI presence & health"
+        description: "GH Actions workflow present + actionlint clean"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+      - name: "Reverse proxy / local-prod environment parity (Traefik)"
+        description: "See docs/system-design.md D11 — reverse proxy / local-prod parity presence"
+        weight: 25.0
+        scoring_model: STATUS_4STATE
+      - name: "Container build hardening"
+        description: "Shares evidence with 4.4/4.5, DevOps framing (is the pipeline clean) vs. Security framing (is the image vulnerable)"
+        weight: 25.0
+        scoring_model: FIXED_SCALE
+      - name: "Deployment automation"
+        description: "build-push.yml/build-deploy.yml presence, wired to a registry push step"
+        weight: 25.0
+        scoring_model: STATUS_4STATE
+  - name: "Documentation"
+    order: 8
+    weight: 6.15
+    criteria:
+      - name: "README completeness"
+        description: "Heuristic: standard section headers present (setup, usage, architecture overview)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Architecture documentation"
+        description: "Shares evidence with 1.2, Documentation framing (present and readable) vs. Architecture framing (reflects real structure)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "API documentation"
+        description: "OpenAPI/Swagger schema present & served (FastAPI auto-docs, Laravel L5-Swagger). N/A for repos with no API."
+        weight: 33.33
+        scoring_model: STATUS_4STATE
+  - name: "Observability / operations"
+    order: 9
+    weight: 6.15
+    criteria:
+      - name: "Structured logging"
+        description: "Heuristic: structured logging library/formatter vs. bare print/console.log"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Error tracking integration"
+        description: "Sentry SDK (or equivalent) present & configured"
+        weight: 33.33
+        scoring_model: STATUS_4STATE
+      - name: "Health-check endpoint"
+        description: "/health or /healthz route present. N/A for repos with no long-lived service."
+        weight: 33.33
+        scoring_model: STATUS_4STATE
+  - name: "API / UX / product quality"
+    order: 10
+    weight: 6.15
+    criteria:
+      - name: "Graphic/visual design quality"
+        description: "See docs/system-design.md D13 — narrow LLM-judgment layer on visual design. Also covers accessibility/WCAG as part of its factual layer (docs/quality-framework.md 4.10, criterion 10.3 is not separately scored)."
+        weight: 50.0
+        scoring_model: FIXED_SCALE
+      - name: "API contract consistency"
+        description: "Spectral, built-in spectral:oas ruleset (candidate). Needs an exported OpenAPI spec file."
+        weight: 50.0
+        scoring_model: FIXED_SCALE
+  - name: "Dependency management"
+    order: 11
+    weight: 6.15
+    criteria:
+      - name: "Dependency freshness"
+        description: "pip list --outdated / npm & pnpm outdated / composer outdated. Gated behind D15 opt-in registry access; N/A when access isn't granted, and N/A for unpinned repos with no lock file."
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "License compliance"
+        description: "Python: pip-licenses (candidate). JS: license-checker-evergreen (candidate). PHP: composer licenses --format=json (validated)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Dependency footprint"
+        description: "Raw dependency count relative to repo size. No established baseline yet, needs Phase 3 calibration data."
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+  - name: "Configuration management"
+    order: 12
+    weight: 6.15
+    criteria:
+      - name: "Environment separation"
+        description: "Heuristic: distinct .env.example/.env.testing/.env.prod.example or equivalent. Also covers 'secrets never hardcoded' as part of its evidence (docs/quality-framework.md 4.12, criterion 12.1 is not separately scored — cross-referenced from 4.2)."
+        weight: 50.0
+        scoring_model: FIXED_SCALE
+      - name: "Config validation at startup"
+        description: "Heuristic: Pydantic Settings (Python) / Laravel config validation pattern present"
+        weight: 50.0
+        scoring_model: STATUS_4STATE
+  - name: "Data quality"
+    order: 13
+    weight: 6.15
+    criteria:
+      - name: "Schema/migration versioning"
+        description: "Migrations directory with sequential, timestamped files (Laravel, Alembic, Django)"
+        weight: 33.33
+        scoring_model: STATUS_4STATE
+      - name: "Input validation at boundaries"
+        description: "Heuristic: Pydantic models on FastAPI routes / Laravel FormRequest classes"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Test data / fixtures quality"
+        description: "Faker/factory pattern present for tests vs. hardcoded literals"
+        weight: 33.33
+        scoring_model: STATUS_4STATE
+  - name: "Developer experience"
+    order: 14
+    weight: 6.15
+    criteria:
+      - name: "Onboarding documentation"
+        description: "CONTRIBUTING.md / setup script presence"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Local dev reproducibility"
+        description: "Shares evidence with reverse proxy / local-prod parity (D11) plus Docker Compose dev-profile presence"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Script/task standardization"
+        description: "package.json/composer.json scripts or Makefile covering the common lifecycle (dev, test, lint, build)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+  - name: "Technical debt"
+    order: 15
+    weight: 6.15
+    criteria:
+      - name: "TODO/FIXME density"
+        description: "Grep-based count, normalized per KLOC"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Dead/unreachable code"
+        description: "Shares evidence with dead code / unused exports (5.2)"
+        weight: 33.33
+        scoring_model: FIXED_SCALE
+      - name: "Framework/runtime version currency"
+        description: "Engine version pinned vs. actually running"
+        weight: 33.33
+        scoring_model: FIXED_SCALE

@@ -1,0 +1,23 @@
+version_label: "Sample Taxonomy v0.1"
+notes: "Fixture for seed_taxonomy unit tests"
+categories:
+  - name: "Sample category A"
+    order: 1
+    weight: 50.0
+    criteria:
+      - name: "Sample criterion A1"
+        description: "Fixture criterion, fixed-scale"
+        weight: 50.0
+        scoring_model: FIXED_SCALE
+      - name: "Sample criterion A2"
+        description: "Fixture criterion, status 4-state"
+        weight: 50.0
+        scoring_model: STATUS_4STATE
+  - name: "Sample category B"
+    order: 2
+    weight: 50.0
+    criteria:
+      - name: "Sample criterion B1"
+        description: "Fixture criterion, fixed-scale"
+        weight: 100.0
+        scoring_model: FIXED_SCALE

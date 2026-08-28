@@ -4,9 +4,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^radar-core/
+        files: ^(radar-core|radar-audit)/
       - id: ruff-format
-        files: ^radar-core/
+        files: ^(radar-core|radar-audit)/
   - repo: local
     hooks:
       - id: mypy-radar-core
@@ -14,4 +14,10 @@ repos:
         entry: uv run --package radar-core mypy radar-core/src/radar_core
         language: system
         files: ^radar-core/src/
+        pass_filenames: false
+      - id: mypy-radar-audit
+        name: mypy (radar-audit)
+        entry: uv run --package radar-audit mypy radar-audit/src/radar_audit
+        language: system
+        files: ^radar-audit/src/
         pass_filenames: false
