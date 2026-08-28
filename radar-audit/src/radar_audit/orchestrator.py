@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
-from radar_core.models.audit import Audit
+from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.repository import Repository
 from sqlmodel import Session, select
+
+from radar_audit.config import PortfolioConfig
+from radar_audit.discovery import SubProject, discover_subprojects
+from radar_audit.runner import RawToolOutput, ToolRunner
+from radar_audit.taxonomy.seed import seed_taxonomy
+from radar_audit.worktree import compute_exclude_paths
 
 
 def resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Repository:
@@ -66,3 +73,67 @@ def get_or_create_audit(session: Session, repository: Repository) -> Audit:
     session.commit()
     session.refresh(audit)
     return audit
+
+
+@dataclass(frozen=True)
+class AuditPlan:
+    repository_name: str
+    repository_path: Path
+    subprojects: list[SubProject]
+    exclude_paths: list[Path]
+
+
+def plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan:
+    repo_path = config.resolve_repo_path(repo_name)
+    return AuditPlan(
+        repository_name=repo_name,
+        repository_path=repo_path,
+        subprojects=discover_subprojects(repo_path),
+        exclude_paths=compute_exclude_paths(repo_path),
+    )
+
+
+def execute_audit(
+    session: Session,
+    config: PortfolioConfig,
+    repo_name: str,
+    runners: list[ToolRunner],
+) -> Audit:
+    plan = plan_audit(config, repo_name)
+
+    seed_taxonomy(session)
+    repository = resolve_repository(session, plan.repository_path, repo_name)
+    audit = get_or_create_audit(session, repository)
+
+    for subproject in plan.subprojects:
+        for runner in runners:
+            raw = _run_tool_safely(runner, subproject.path, plan.exclude_paths)
+            session.add(
+                ToolResult(
+                    audit_id=audit.id,
+                    tool_name=runner.tool_name,
+                    tool_version=runner.tool_version,
+                    command=raw.command,
+                    raw_output=raw.raw_output,
+                    exit_code=raw.exit_code,
+                    duration_ms=raw.duration_ms,
+                )
+            )
+
+    session.commit()
+    session.refresh(audit)
+    return audit
+
+
+def _run_tool_safely(
+    runner: ToolRunner, subproject_path: Path, exclude_paths: list[Path]
+) -> RawToolOutput:
+    try:
+        return runner.run(subproject_path, exclude_paths)
+    except Exception as exc:  # noqa: BLE001 - a tool crash must persist as evidence, never abort the audit
+        return RawToolOutput(
+            command=f"{runner.tool_name} (crashed)",
+            raw_output={"error": str(exc)},
+            exit_code=-1,
+            duration_ms=0,
+        )

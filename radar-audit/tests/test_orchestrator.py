@@ -1,9 +1,15 @@
+from radar_audit.config import PortfolioConfig
 from radar_audit.orchestrator import (
+    AuditPlan,
+    execute_audit,
     get_commit_sha,
     get_or_create_audit,
     is_dirty,
+    plan_audit,
     resolve_repository,
 )
+from radar_audit.runner import RawToolOutput
+from radar_core.models.audit import ToolResult
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -90,3 +96,89 @@ def test_get_or_create_audit_creates_a_new_row_per_dirty_run(db_session, tmp_pat
     second = get_or_create_audit(db_session, repository)
 
     assert first.id != second.id
+
+
+class _StubRunner:
+    tool_name = "stub-runner"
+    tool_version = "0.0.1"
+
+    def run(self, subproject_path, exclude_paths):
+        return RawToolOutput(
+            command="stub",
+            raw_output={"ok": True},
+            exit_code=0,
+            duration_ms=1,
+        )
+
+
+class _AlwaysCrashesRunner:
+    tool_name = "crashes-runner"
+    tool_version = "0.0.1"
+
+    def run(self, subproject_path, exclude_paths):
+        raise RuntimeError("boom")
+
+
+def test_plan_audit_returns_repo_subprojects_and_exclude_paths(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    plan = plan_audit(config, "repo")
+
+    assert isinstance(plan, AuditPlan)
+    assert plan.repository_name == "repo"
+    assert plan.repository_path == repo_path.resolve()
+    assert len(plan.subprojects) == 1
+    assert plan.exclude_paths == []
+
+
+def test_execute_audit_persists_one_tool_result_per_subproject_and_runner(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"backend/pyproject.toml": "[project]\nname='x'\n", "frontend/package.json": "{}\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_StubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert len(results) == 2
+    assert all(r.tool_name == "stub-runner" for r in results)
+    assert all(r.exit_code == 0 for r in results)
+
+
+def test_execute_audit_continues_past_a_crashing_runner(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_AlwaysCrashesRunner(), _StubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert len(results) == 2
+
+    crashed = next(r for r in results if r.tool_name == "crashes-runner")
+    assert crashed.exit_code != 0
+    assert "boom" in crashed.raw_output["error"]
+
+    succeeded = next(r for r in results if r.tool_name == "stub-runner")
+    assert succeeded.exit_code == 0
+
+
+def test_execute_audit_seeds_the_taxonomy(db_session, tmp_path):
+    from radar_core.models.methodology import MethodologyVersion
+
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    execute_audit(db_session, config, "repo", [_StubRunner()])
+
+    version = db_session.exec(
+        select(MethodologyVersion).where(
+            MethodologyVersion.version_label == "Quality Framework v1.0"
+        )
+    ).first()
+    assert version is not None
