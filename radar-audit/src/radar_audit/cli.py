@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from subprocess import CalledProcessError
 
 import typer
 from radar_core.db import get_engine, get_session
 
-from radar_audit.config import load_portfolio_config
+from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit
 from radar_audit.runner import ToolRunner
 from radar_audit.runners.example import ExampleGitLogRunner
@@ -31,6 +32,14 @@ def _database_url() -> str:
     return url
 
 
+_EXPECTED_ERRORS = (
+    MissingDatabaseUrlError,
+    PortfolioConfigError,
+    FileNotFoundError,
+    CalledProcessError,
+)
+
+
 @app.callback(invoke_without_command=True)
 def main() -> None:
     """Radar-audit: tool orchestration engine for Portfolio-Engineering-Radar."""
@@ -51,26 +60,30 @@ def run(
     if not all_repos and repo_name is None:
         raise typer.BadParameter("Provide a repository name or use --all")
 
-    config = load_portfolio_config(config_path)
-    if all_repos:
-        repo_names = config.repositories
-    else:
-        assert repo_name is not None  # Guaranteed by the check above
-        repo_names = [repo_name]
-
-    if dry_run:
-        for name in repo_names:
-            _print_plan(plan_audit(config, name))
-        return
-
-    engine = get_engine(_database_url())
-    session = get_session(engine)
     try:
-        for name in repo_names:
-            execute_audit(session, config, name, DEFAULT_RUNNERS)
-    finally:
-        session.close()
-        engine.dispose()
+        config = load_portfolio_config(config_path)
+        if all_repos:
+            repo_names = config.repositories
+        else:
+            assert repo_name is not None  # Guaranteed by the check above
+            repo_names = [repo_name]
+
+        if dry_run:
+            for name in repo_names:
+                _print_plan(plan_audit(config, name))
+            return
+
+        engine = get_engine(_database_url())
+        session = get_session(engine)
+        try:
+            for name in repo_names:
+                execute_audit(session, config, name, DEFAULT_RUNNERS)
+        finally:
+            session.close()
+            engine.dispose()
+    except _EXPECTED_ERRORS as exc:
+        typer.secho(f"Error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(1) from exc
 
 
 def _print_plan(plan: AuditPlan) -> None:

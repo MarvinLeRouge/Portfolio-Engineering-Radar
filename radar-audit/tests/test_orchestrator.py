@@ -1,3 +1,5 @@
+import subprocess
+
 from radar_audit.config import PortfolioConfig
 from radar_audit.orchestrator import (
     AuditPlan,
@@ -165,6 +167,45 @@ def test_execute_audit_continues_past_a_crashing_runner(db_session, tmp_path):
 
     succeeded = next(r for r in results if r.tool_name == "stub-runner")
     assert succeeded.exit_code == 0
+
+
+def test_plan_audit_excludes_worktrees_from_subprojects(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"pyproject.toml": "[project]\nname='x'\n"})
+    worktree_path = repo_path / "wt-feature"
+    subprocess.run(
+        ["git", "-C", str(repo_path), "worktree", "add", "-b", "wt-branch", str(worktree_path)],
+        check=True,
+        capture_output=True,
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    plan = plan_audit(config, "repo")
+
+    worktree_resolved = worktree_path.resolve()
+    assert not any(
+        subproject.path == worktree_resolved or worktree_resolved in subproject.path.parents
+        for subproject in plan.subprojects
+    )
+
+
+def test_execute_audit_replaces_tool_results_instead_of_accumulating_on_rerun(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    first_audit = execute_audit(db_session, config, "repo", [_StubRunner()])
+    first_results = db_session.exec(
+        select(ToolResult).where(ToolResult.audit_id == first_audit.id)
+    ).all()
+
+    second_audit = execute_audit(db_session, config, "repo", [_StubRunner()])
+    second_results = db_session.exec(
+        select(ToolResult).where(ToolResult.audit_id == second_audit.id)
+    ).all()
+
+    assert first_audit.id == second_audit.id
+    assert len(second_results) == len(first_results)
 
 
 def test_execute_audit_seeds_the_taxonomy(db_session, tmp_path):

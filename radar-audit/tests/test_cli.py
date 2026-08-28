@@ -36,6 +36,37 @@ def test_run_without_repo_name_or_all_fails(tmp_path):
     assert result.exit_code != 0
 
 
+def test_run_without_database_url_prints_clean_error_no_traceback(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repos" / "sample-repo"
+    init_git_repo(repo_path)
+    config_path = _write_config(tmp_path, tmp_path / "repos", ["sample-repo"])
+    monkeypatch.delenv("RADAR_DATABASE_URL", raising=False)
+
+    result = runner.invoke(app, ["run", "sample-repo", "--config", str(config_path)])
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "Traceback" not in result.output
+    assert "Traceback" not in result.stderr
+    assert "Error:" in result.stderr
+    assert "RADAR_DATABASE_URL" in result.stderr
+
+
+def test_run_with_unknown_repo_name_prints_clean_error_no_traceback(tmp_path):
+    config_path = _write_config(tmp_path, tmp_path / "repos", ["sample-repo"])
+
+    result = runner.invoke(
+        app, ["run", "not-a-real-repo", "--config", str(config_path), "--dry-run"]
+    )
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "Traceback" not in result.output
+    assert "Traceback" not in result.stderr
+    assert "Error:" in result.stderr
+    assert "not-a-real-repo" in result.stderr
+
+
 def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
     repo_path = tmp_path / "repos" / "sample-repo"
     init_git_repo(repo_path)

@@ -85,12 +85,23 @@ class AuditPlan:
 
 def plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan:
     repo_path = config.resolve_repo_path(repo_name)
+    exclude_paths = compute_exclude_paths(repo_path)
+    subprojects = [
+        subproject
+        for subproject in discover_subprojects(repo_path)
+        if not _is_excluded(subproject.path, exclude_paths)
+    ]
     return AuditPlan(
         repository_name=repo_name,
         repository_path=repo_path,
-        subprojects=discover_subprojects(repo_path),
-        exclude_paths=compute_exclude_paths(repo_path),
+        subprojects=subprojects,
+        exclude_paths=exclude_paths,
     )
+
+
+def _is_excluded(path: Path, exclude_paths: list[Path]) -> bool:
+    resolved = path.resolve()
+    return any(resolved == excluded or excluded in resolved.parents for excluded in exclude_paths)
 
 
 def execute_audit(
@@ -104,6 +115,10 @@ def execute_audit(
     seed_taxonomy(session)
     repository = resolve_repository(session, plan.repository_path, repo_name)
     audit = get_or_create_audit(session, repository)
+
+    existing_results = session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    for result in existing_results:
+        session.delete(result)
 
     for subproject in plan.subprojects:
         for runner in runners:
