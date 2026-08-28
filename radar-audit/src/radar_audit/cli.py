@@ -10,12 +10,22 @@ from radar_core.db import get_engine, get_session
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit
 from radar_audit.runner import ToolRunner
-from radar_audit.runners.example import ExampleGitLogRunner
+from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
+from radar_audit.runners.design_doc_runner import DesignDocRunner
+from radar_audit.runners.pydeps_runner import PydepsRunner
+from radar_audit.runners.radon_module_size_runner import RadonModuleSizeRunner
+from radar_audit.runners.static_loc_runner import StaticLocRunner
 
 app = typer.Typer()
 
 DEFAULT_PORTFOLIO_YAML = Path(__file__).resolve().parents[2] / "portfolio.yaml"
-DEFAULT_RUNNERS: list[ToolRunner] = [ExampleGitLogRunner()]
+DEFAULT_RUNNERS: list[ToolRunner] = [
+    DependencyCruiserRunner(),
+    PydepsRunner(),
+    DesignDocRunner(),
+    RadonModuleSizeRunner(),
+    StaticLocRunner(),
+]
 
 
 class MissingDatabaseUrlError(RuntimeError):

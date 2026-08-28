@@ -24,7 +24,11 @@ def test_dry_run_prints_plan_and_writes_nothing_to_disk(tmp_path):
 
     assert result.exit_code == 0
     assert "sample-repo" in result.stdout
-    assert "example-git-log" in result.stdout
+    assert "dependency-cruiser" in result.stdout
+    assert "pydeps" in result.stdout
+    assert "design-doc-presence" in result.stdout
+    assert "radon-raw" in result.stdout
+    assert "static-loc-count" in result.stdout
     assert not (tmp_path / "radar.db").exists()
 
 
@@ -95,5 +99,8 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         audits = session.exec(select(Audit)).all()
         assert len(audits) == 1
         results = session.exec(select(ToolResult)).all()
+        # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped
+        # DesignDocRunner (stack-independent) runs; the other four are subproject-scoped
+        # and skip an "unknown" stack.
         assert len(results) == 1
-        assert results[0].tool_name == "example-git-log"
+        assert results[0].tool_name == "design-doc-presence"
