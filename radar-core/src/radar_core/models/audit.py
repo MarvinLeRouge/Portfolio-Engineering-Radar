@@ -39,6 +39,7 @@ class ToolResult(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     audit_id: int = Field(foreign_key="audit.id", index=True)
+    subproject_path: str = Field(index=True)
     tool_name: str = Field(index=True)
     tool_version: str
     command: str
