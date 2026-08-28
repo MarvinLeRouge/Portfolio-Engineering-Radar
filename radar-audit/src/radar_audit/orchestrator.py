@@ -126,6 +126,7 @@ def execute_audit(
             session.add(
                 ToolResult(
                     audit_id=audit.id,
+                    subproject_path=str(subproject.path),
                     tool_name=runner.tool_name,
                     tool_version=runner.tool_version,
                     command=raw.command,
@@ -141,10 +142,10 @@ def execute_audit(
 
 
 def _run_tool_safely(
-    runner: ToolRunner, subproject_path: Path, exclude_paths: list[Path]
+    runner: ToolRunner, target_path: Path, exclude_paths: list[Path]
 ) -> RawToolOutput:
     try:
-        return runner.run(subproject_path, exclude_paths)
+        return runner.run(target_path, exclude_paths)
     except Exception as exc:  # noqa: BLE001 - a tool crash must persist as evidence, never abort the audit
         return RawToolOutput(
             command=f"{runner.tool_name} (crashed)",

@@ -103,8 +103,11 @@ def test_get_or_create_audit_creates_a_new_row_per_dirty_run(db_session, tmp_pat
 class _StubRunner:
     tool_name = "stub-runner"
     tool_version = "0.0.1"
+    supported_stacks = frozenset({"unknown", "python"})
+    scope = "subproject"
+    timeout_s = 10
 
-    def run(self, subproject_path, exclude_paths):
+    def run(self, target_path, exclude_paths):
         return RawToolOutput(
             command="stub",
             raw_output={"ok": True},
@@ -116,8 +119,11 @@ class _StubRunner:
 class _AlwaysCrashesRunner:
     tool_name = "crashes-runner"
     tool_version = "0.0.1"
+    supported_stacks = frozenset({"unknown"})
+    scope = "subproject"
+    timeout_s = 10
 
-    def run(self, subproject_path, exclude_paths):
+    def run(self, target_path, exclude_paths):
         raise RuntimeError("boom")
 
 

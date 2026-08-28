@@ -31,3 +31,11 @@ def test_example_runner_nonzero_exit_on_non_git_directory(tmp_path):
     result = runner.run(not_a_repo, exclude_paths=[])
 
     assert result.exit_code != 0
+
+
+def test_example_runner_declares_protocol_metadata():
+    runner = ExampleGitLogRunner()
+
+    assert runner.supported_stacks == frozenset({"unknown", "python", "javascript", "php"})
+    assert runner.scope == "subproject"
+    assert runner.timeout_s == 10
