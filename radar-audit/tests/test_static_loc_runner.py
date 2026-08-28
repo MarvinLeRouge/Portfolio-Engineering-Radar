@@ -48,3 +48,27 @@ def test_reports_tool_identity():
     assert runner.tool_name == "static-loc-count"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript", "php"})
+
+
+def test_counts_files_even_when_repo_path_contains_skip_dirname(tmp_path):
+    """Regression test: repo checked out under a dir named 'vendor' or 'dist' etc.
+    should still count source files at the repo root, since the skip list applies
+    to relative paths within the scanned project, not the absolute checkout path.
+    """
+    repo_root = tmp_path / "vendor" / "repo"
+    init_git_repo(
+        repo_root,
+        files={
+            "src/a.js": "line one\n",
+            "main.php": "<?php\necho 1;\n",
+        },
+    )
+
+    runner = StaticLocRunner()
+    result = runner.run(repo_root, exclude_paths=[])
+
+    files = result.raw_output["files"]
+    assert str(repo_root / "src" / "a.js") in files
+    assert files[str(repo_root / "src" / "a.js")] == 1
+    assert str(repo_root / "main.php") in files
+    assert files[str(repo_root / "main.php")] == 2

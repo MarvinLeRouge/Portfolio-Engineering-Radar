@@ -28,7 +28,7 @@ class StaticLocRunner:
         for file_path in sorted(target_path.rglob("*")):
             if not file_path.is_file() or file_path.suffix not in _SOURCE_EXTENSIONS:
                 continue
-            if self._is_skipped(file_path, exclude_paths):
+            if self._is_skipped(file_path, target_path, exclude_paths):
                 continue
             per_file[str(file_path)] = self._count_non_blank_lines(file_path)
 
@@ -40,8 +40,9 @@ class StaticLocRunner:
             duration_ms=duration_ms,
         )
 
-    def _is_skipped(self, file_path: Path, exclude_paths: list[Path]) -> bool:
-        if any(part in _SKIP_DIRNAMES for part in file_path.parts):
+    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
+        relative_parts = file_path.relative_to(target_path).parts
+        if any(part in _SKIP_DIRNAMES for part in relative_parts):
             return True
         return any(
             excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
