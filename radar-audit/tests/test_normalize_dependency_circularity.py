@@ -136,8 +136,9 @@ def test_worst_band_wins_across_two_subprojects(db_session):
 
     score = normalize_dependency_circularity(db_session, scoring_run, criterion, [clean, broken])
 
-    # broken has one 3-node cycle (a->b->c->a) -> band 4 (3-5 nodes); worst wins over clean's 10
-    assert score.value == 4.0
+    # broken has exactly one cycle group (a 3-node cycle a->b->c->a) -> band 6.0
+    # (1-2 cycles); worst wins over clean's 10
+    assert score.value == 6.0
 
 
 def test_skips_failed_tool_results(db_session):
