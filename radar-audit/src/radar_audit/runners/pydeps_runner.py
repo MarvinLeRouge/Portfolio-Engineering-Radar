@@ -29,6 +29,9 @@ class PydepsRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        # exclude_paths is accepted for ToolRunner protocol conformance but unused here: pydeps
+        # has no path-exclusion flag, and discover_subprojects only descends into non-dot
+        # directories, so linked worktrees never reach this runner as a target_path anyway.
         command = ["uvx", "pydeps", str(target_path), "--show-deps", "--no-output", "--max-bacon=0"]
 
         start = time.monotonic()

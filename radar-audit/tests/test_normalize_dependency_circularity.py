@@ -169,3 +169,58 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_dependency_circularity(db_session, scoring_run, criterion, [unrelated])
 
     assert score is None
+
+
+def test_pydeps_empty_output_is_treated_as_unusable_not_ten(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(db_session, audit, "pydeps", {})
+
+    score = normalize_dependency_circularity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_dependency_cruiser_empty_modules_is_treated_as_unusable_not_ten(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session, audit, "dependency-cruiser", {"modules": [], "summary": {"totalCruised": 0}}
+    )
+
+    score = normalize_dependency_circularity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_three_disjoint_cycles_scores_four(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        "pydeps",
+        {
+            "p1": {"imports": ["p2"]},
+            "p2": {"imports": ["p1"]},
+            "p3": {"imports": ["p4"]},
+            "p4": {"imports": ["p3"]},
+            "p5": {"imports": ["p6"]},
+            "p6": {"imports": ["p5"]},
+        },
+    )
+
+    score = normalize_dependency_circularity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 4.0
+
+
+def test_six_disjoint_cycles_scores_two(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    raw_output = {}
+    for i in range(6):
+        a, b = f"p{2 * i}", f"p{2 * i + 1}"
+        raw_output[a] = {"imports": [b]}
+        raw_output[b] = {"imports": [a]}
+    tool_result = _make_tool_result(db_session, audit, "pydeps", raw_output)
+
+    score = normalize_dependency_circularity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 2.0

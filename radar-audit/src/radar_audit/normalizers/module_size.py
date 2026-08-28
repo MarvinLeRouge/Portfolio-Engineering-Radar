@@ -55,7 +55,7 @@ def normalize_module_size(
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
         value=(covered / applicable) * 10,
-        confidence=Confidence.HIGH,
+        confidence=Confidence.MEDIUM,
     )
     session.add(score)
     session.commit()
@@ -65,5 +65,9 @@ def normalize_module_size(
 
 def _per_file_loc(tool_result: ToolResult) -> dict[str, int]:
     if tool_result.tool_name == "radon-raw":
-        return {path: data["sloc"] for path, data in tool_result.raw_output.items()}
+        return {
+            path: data["sloc"]
+            for path, data in tool_result.raw_output.items()
+            if isinstance(data, dict) and "sloc" in data
+        }
     return dict(tool_result.raw_output.get("files", {}))

@@ -32,10 +32,12 @@ class DependencyCruiserRunner:
         exclude_pattern = self._build_exclude_pattern(target_path, exclude_paths)
         if exclude_pattern is not None:
             command.extend(["-x", exclude_pattern])
-        command.append(str(target_path))
+        command.append(".")
 
         start = time.monotonic()
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout_s)
+        completed = subprocess.run(
+            command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
+        )
         duration_ms = int((time.monotonic() - start) * 1000)
 
         try:

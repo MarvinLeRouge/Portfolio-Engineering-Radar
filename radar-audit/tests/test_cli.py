@@ -24,11 +24,14 @@ def test_dry_run_prints_plan_and_writes_nothing_to_disk(tmp_path):
 
     assert result.exit_code == 0
     assert "sample-repo" in result.stdout
-    assert "dependency-cruiser" in result.stdout
-    assert "pydeps" in result.stdout
+    # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped
+    # DesignDocRunner (stack-independent) is planned; the other four are
+    # subproject-scoped and skip an "unknown" stack.
     assert "design-doc-presence" in result.stdout
-    assert "radon-raw" in result.stdout
-    assert "static-loc-count" in result.stdout
+    assert "dependency-cruiser" not in result.stdout
+    assert "pydeps" not in result.stdout
+    assert "radon-raw" not in result.stdout
+    assert "static-loc-count" not in result.stdout
     assert not (tmp_path / "radar.db").exists()
 
 

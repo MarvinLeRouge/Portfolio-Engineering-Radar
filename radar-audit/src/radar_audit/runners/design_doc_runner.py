@@ -54,7 +54,7 @@ class DesignDocRunner:
     def _find_named_file(self, directory: Path) -> Path | None:
         if not directory.is_dir():
             return None
-        for entry in directory.iterdir():
+        for entry in sorted(directory.iterdir()):
             if entry.is_file() and entry.name.upper() in _DOC_FILENAMES:
                 return entry
         return None

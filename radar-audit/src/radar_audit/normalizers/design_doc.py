@@ -50,7 +50,7 @@ def normalize_design_doc(
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
         value=value,
-        confidence=Confidence.HIGH,
+        confidence=Confidence.MEDIUM,
     )
     session.add(score)
     session.commit()

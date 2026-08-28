@@ -110,3 +110,17 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_module_size(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_radon_error_entries_are_excluded_not_crashed_on(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        "radon-raw",
+        {"a.py": {"sloc": 100}, "unparseable.py": {"error": "SyntaxError: invalid syntax"}},
+    )
+
+    score = normalize_module_size(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 10.0  # only a.py counted, 1/1 covered

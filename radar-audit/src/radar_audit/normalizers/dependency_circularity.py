@@ -14,6 +14,24 @@ _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (2, 6.0), (5, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
 
 
+def _is_usable(tool_result: ToolResult) -> bool:
+    """A 0-exit-code result that analyzed nothing must not be scored as "no
+    cycles found" (the top band) -- that would be worse than a missing-data
+    skip. dependency-cruiser signals "nothing analyzed" with an empty
+    modules list; pydeps signals it when not a single module in its output
+    declares any outbound import at all (its typical failure mode for
+    src-layout or non-importable package roots).
+    """
+    if tool_result.tool_name == "dependency-cruiser":
+        return bool(tool_result.raw_output.get("modules", []))
+    imports_lists = (
+        data.get("imports", [])
+        for data in tool_result.raw_output.values()
+        if isinstance(data, dict)
+    )
+    return any(imports_lists)
+
+
 def normalize_dependency_circularity(
     session: Session,
     scoring_run: ScoringRun,
@@ -26,6 +44,8 @@ def normalize_dependency_circularity(
 
     worst_value: float | None = None
     for tool_result in relevant:
+        if not _is_usable(tool_result):
+            continue
         cycles = _detect_cycles(tool_result)
         for cycle_nodes in cycles:
             session.add(
@@ -44,7 +64,8 @@ def normalize_dependency_circularity(
         if worst_value is None or value < worst_value:
             worst_value = value
 
-    assert worst_value is not None  # relevant is non-empty, so the loop above always ran
+    if worst_value is None:
+        return None
 
     score = Score(
         scoring_run_id=scoring_run.id,
