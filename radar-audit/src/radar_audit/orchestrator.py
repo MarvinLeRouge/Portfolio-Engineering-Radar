@@ -120,13 +120,24 @@ def execute_audit(
     for result in existing_results:
         session.delete(result)
 
+    repo_scope_done: set[str] = set()
     for subproject in plan.subprojects:
         for runner in runners:
-            raw = _run_tool_safely(runner, subproject.path, plan.exclude_paths)
+            if runner.scope == "repo":
+                if runner.tool_name in repo_scope_done:
+                    continue
+                repo_scope_done.add(runner.tool_name)
+                target_path = plan.repository_path
+            else:
+                if subproject.stack not in runner.supported_stacks:
+                    continue
+                target_path = subproject.path
+
+            raw = _run_tool_safely(runner, target_path, plan.exclude_paths)
             session.add(
                 ToolResult(
                     audit_id=audit.id,
-                    subproject_path=str(subproject.path),
+                    subproject_path=_relative_subproject_path(target_path, plan.repository_path),
                     tool_name=runner.tool_name,
                     tool_version=runner.tool_version,
                     command=raw.command,
@@ -139,6 +150,14 @@ def execute_audit(
     session.commit()
     session.refresh(audit)
     return audit
+
+
+def _relative_subproject_path(target_path: Path, repository_path: Path) -> str:
+    resolved_target = target_path.resolve()
+    resolved_repo = repository_path.resolve()
+    if resolved_target == resolved_repo:
+        return "."
+    return str(resolved_target.relative_to(resolved_repo))
 
 
 def _run_tool_safely(
