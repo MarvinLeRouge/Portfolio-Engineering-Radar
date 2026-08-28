@@ -1,0 +1,12 @@
+repos_root: ~/projets
+repositories:
+  - name: CC-Beacon
+  - name: GeoChallenge-Tracker
+  - name: HexaRot
+  - name: HiveMind
+  - name: JobFlow
+  - name: Portfolio-Engineering-Radar
+  - name: Stamped
+  - name: Summit-Stats
+  - name: Trello-Board-Init
+  - name: Triton
