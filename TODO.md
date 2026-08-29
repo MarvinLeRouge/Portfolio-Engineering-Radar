@@ -52,6 +52,8 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 - [ ] Implement tool orchestration and raw-result normalization
   - [x] Core orchestration engine (`radar-audit`, increment 2.0): portfolio config, sub-project discovery, worktree exclusion, `ToolRunner` protocol with crash isolation, Quality Framework v1.0 taxonomy seeding, Repository/Audit resolution, Typer CLI
   - [ ] Raw-result normalization per Quality Framework category (increments 2.1–2.15, one per category)
+    - [x] Category 1 — Architecture & design (increment 2.1): dependency-cruiser + pydeps, DESIGN.md/ARCHITECTURE.md/ADR presence, radon + static LOC module size
+    - [ ] Categories 2–15 (increments 2.2–2.15)
 - [ ] Implement the local dashboard (backend + frontend)
 - [ ] Implement report generation (global + per-repository)
 
