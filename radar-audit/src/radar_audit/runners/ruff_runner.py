@@ -26,7 +26,6 @@ class RuffRunner:
             "ruff",
             "check",
             "--output-format=json",
-            "--select=F",
             ".",
         ]
         if exclude_paths:
