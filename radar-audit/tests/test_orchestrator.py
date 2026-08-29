@@ -103,8 +103,11 @@ def test_get_or_create_audit_creates_a_new_row_per_dirty_run(db_session, tmp_pat
 class _StubRunner:
     tool_name = "stub-runner"
     tool_version = "0.0.1"
+    supported_stacks: frozenset[str] = frozenset({"unknown", "python", "javascript", "php"})
+    scope = "subproject"
+    timeout_s = 10
 
-    def run(self, subproject_path, exclude_paths):
+    def run(self, target_path, exclude_paths):
         return RawToolOutput(
             command="stub",
             raw_output={"ok": True},
@@ -116,9 +119,34 @@ class _StubRunner:
 class _AlwaysCrashesRunner:
     tool_name = "crashes-runner"
     tool_version = "0.0.1"
+    supported_stacks: frozenset[str] = frozenset({"unknown", "python", "javascript", "php"})
+    scope = "subproject"
+    timeout_s = 10
 
-    def run(self, subproject_path, exclude_paths):
+    def run(self, target_path, exclude_paths):
         raise RuntimeError("boom")
+
+
+class _RepoScopeStubRunner:
+    tool_name = "repo-scope-stub"
+    tool_version = "0.0.1"
+    supported_stacks: frozenset[str] = frozenset()
+    scope = "repo"
+    timeout_s = 10
+
+    def run(self, target_path, exclude_paths):
+        return RawToolOutput(command="stub", raw_output={"ok": True}, exit_code=0, duration_ms=1)
+
+
+class _JsOnlyStubRunner:
+    tool_name = "js-only-stub"
+    tool_version = "0.0.1"
+    supported_stacks: frozenset[str] = frozenset({"javascript"})
+    scope = "subproject"
+    timeout_s = 10
+
+    def run(self, target_path, exclude_paths):
+        return RawToolOutput(command="stub", raw_output={"ok": True}, exit_code=0, duration_ms=1)
 
 
 def test_plan_audit_returns_repo_subprojects_and_exclude_paths(tmp_path):
@@ -223,3 +251,45 @@ def test_execute_audit_seeds_the_taxonomy(db_session, tmp_path):
         )
     ).first()
     assert version is not None
+
+
+def test_execute_audit_sets_subproject_path_relative_to_repo_root(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"backend/pyproject.toml": "[project]\nname='x'\n", "frontend/package.json": "{}\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_StubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert {r.subproject_path for r in results} == {"backend", "frontend"}
+
+
+def test_execute_audit_runs_repo_scope_runner_once_regardless_of_subproject_count(
+    db_session, tmp_path
+):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"backend/pyproject.toml": "[project]\nname='x'\n", "frontend/package.json": "{}\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_RepoScopeStubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert len(results) == 1
+    assert results[0].subproject_path == "."
+
+
+def test_execute_audit_skips_runner_for_unsupported_stack(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"pyproject.toml": "[project]\nname='x'\n"})
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_JsOnlyStubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert results == []

@@ -22,6 +22,7 @@ def test_create_audit_with_tool_result(db_session):
 
     tool_result = ToolResult(
         audit_id=audit.id,
+        subproject_path=".",
         tool_name="gitleaks",
         tool_version="8.18.0",
         command="gitleaks detect --report-format json",
@@ -34,6 +35,7 @@ def test_create_audit_with_tool_result(db_session):
     db_session.refresh(tool_result)
 
     assert tool_result.audit_id == audit.id
+    assert tool_result.subproject_path == "."
     assert tool_result.raw_output == {"findings": []}
 
 

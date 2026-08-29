@@ -8,14 +8,24 @@ import typer
 from radar_core.db import get_engine, get_session
 
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
-from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit
+from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
 from radar_audit.runner import ToolRunner
-from radar_audit.runners.example import ExampleGitLogRunner
+from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
+from radar_audit.runners.design_doc_runner import DesignDocRunner
+from radar_audit.runners.pydeps_runner import PydepsRunner
+from radar_audit.runners.radon_module_size_runner import RadonModuleSizeRunner
+from radar_audit.runners.static_loc_runner import StaticLocRunner
 
 app = typer.Typer()
 
 DEFAULT_PORTFOLIO_YAML = Path(__file__).resolve().parents[2] / "portfolio.yaml"
-DEFAULT_RUNNERS: list[ToolRunner] = [ExampleGitLogRunner()]
+DEFAULT_RUNNERS: list[ToolRunner] = [
+    DependencyCruiserRunner(),
+    PydepsRunner(),
+    DesignDocRunner(),
+    RadonModuleSizeRunner(),
+    StaticLocRunner(),
+]
 
 
 class MissingDatabaseUrlError(RuntimeError):
@@ -91,8 +101,8 @@ def _print_plan(plan: AuditPlan) -> None:
     typer.echo(f"Excluded worktrees: {[str(p) for p in plan.exclude_paths]}")
     for subproject in plan.subprojects:
         typer.echo(f"  subproject: {subproject.path} [{subproject.stack}]")
-        for tool_runner in DEFAULT_RUNNERS:
-            typer.echo(f"    would run: {tool_runner.tool_name}")
+    for run in planned_runs(plan, DEFAULT_RUNNERS):
+        typer.echo(f"  {run.target_path}: would run: {run.runner.tool_name}")
 
 
 if __name__ == "__main__":

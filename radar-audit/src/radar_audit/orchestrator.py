@@ -104,6 +104,34 @@ def _is_excluded(path: Path, exclude_paths: list[Path]) -> bool:
     return any(resolved == excluded or excluded in resolved.parents for excluded in exclude_paths)
 
 
+@dataclass(frozen=True)
+class PlannedRun:
+    target_path: Path
+    runner: ToolRunner
+
+
+def planned_runs(plan: AuditPlan, runners: list[ToolRunner]) -> list[PlannedRun]:
+    """The exact (target_path, runner) pairs execute_audit will invoke -- shared
+    with the CLI's --dry-run preview so the two never drift out of sync (a
+    repo-scope runner runs once per audit; a subproject-scope runner runs
+    once per matching-stack subproject).
+    """
+    runs: list[PlannedRun] = []
+    repo_scope_done: set[str] = set()
+    for subproject in plan.subprojects:
+        for runner in runners:
+            if runner.scope == "repo":
+                if runner.tool_name in repo_scope_done:
+                    continue
+                repo_scope_done.add(runner.tool_name)
+                runs.append(PlannedRun(plan.repository_path, runner))
+            else:
+                if subproject.stack not in runner.supported_stacks:
+                    continue
+                runs.append(PlannedRun(subproject.path, runner))
+    return runs
+
+
 def execute_audit(
     session: Session,
     config: PortfolioConfig,
@@ -120,31 +148,39 @@ def execute_audit(
     for result in existing_results:
         session.delete(result)
 
-    for subproject in plan.subprojects:
-        for runner in runners:
-            raw = _run_tool_safely(runner, subproject.path, plan.exclude_paths)
-            session.add(
-                ToolResult(
-                    audit_id=audit.id,
-                    tool_name=runner.tool_name,
-                    tool_version=runner.tool_version,
-                    command=raw.command,
-                    raw_output=raw.raw_output,
-                    exit_code=raw.exit_code,
-                    duration_ms=raw.duration_ms,
-                )
+    for run in planned_runs(plan, runners):
+        raw = _run_tool_safely(run.runner, run.target_path, plan.exclude_paths)
+        session.add(
+            ToolResult(
+                audit_id=audit.id,
+                subproject_path=_relative_subproject_path(run.target_path, plan.repository_path),
+                tool_name=run.runner.tool_name,
+                tool_version=run.runner.tool_version,
+                command=raw.command,
+                raw_output=raw.raw_output,
+                exit_code=raw.exit_code,
+                duration_ms=raw.duration_ms,
             )
+        )
 
     session.commit()
     session.refresh(audit)
     return audit
 
 
+def _relative_subproject_path(target_path: Path, repository_path: Path) -> str:
+    resolved_target = target_path.resolve()
+    resolved_repo = repository_path.resolve()
+    if resolved_target == resolved_repo:
+        return "."
+    return str(resolved_target.relative_to(resolved_repo))
+
+
 def _run_tool_safely(
-    runner: ToolRunner, subproject_path: Path, exclude_paths: list[Path]
+    runner: ToolRunner, target_path: Path, exclude_paths: list[Path]
 ) -> RawToolOutput:
     try:
-        return runner.run(subproject_path, exclude_paths)
+        return runner.run(target_path, exclude_paths)
     except Exception as exc:  # noqa: BLE001 - a tool crash must persist as evidence, never abort the audit
         return RawToolOutput(
             command=f"{runner.tool_name} (crashed)",

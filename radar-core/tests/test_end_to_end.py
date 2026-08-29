@@ -32,6 +32,7 @@ def test_full_audit_to_roadmap_chain(db_session):
 
     tool_result = ToolResult(
         audit_id=audit.id,
+        subproject_path=".",
         tool_name="gitleaks",
         tool_version="8.18.0",
         command="gitleaks detect --report-format json",
