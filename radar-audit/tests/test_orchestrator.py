@@ -293,3 +293,18 @@ def test_execute_audit_skips_runner_for_unsupported_stack(db_session, tmp_path):
 
     results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
     assert results == []
+
+
+def test_execute_audit_runs_multi_stack_runner_once_per_colocated_stacks(db_session, tmp_path):
+    # PHP + JS manifests at the same physical path (no folder separation, e.g. a
+    # Laravel + Vue monorepo) yield two SubProject entries with an identical path.
+    # A runner whose supported_stacks covers both must still run once for that path.
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"package.json": "{}\n", "composer.json": "{}\n"})
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    audit = execute_audit(db_session, config, "repo", [_StubRunner()])
+
+    results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
+    assert len(results) == 1
+    assert results[0].tool_name == "stub-runner"
