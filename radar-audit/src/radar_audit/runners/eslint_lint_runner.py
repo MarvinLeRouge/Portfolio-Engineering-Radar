@@ -21,7 +21,30 @@ class EslintLintRunner:
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         scope_tokens = self._resolve_lint_scope(target_path)
+
+        # Filter out scope tokens that are under excluded paths to avoid conflicts
+        # where ESLint would be asked to lint and then ignore the same path
+        filtered_tokens = []
+        for token in scope_tokens:
+            token_path = target_path / token
+            is_excluded = any(
+                token_path == excluded or token_path in excluded.parents
+                for excluded in exclude_paths
+            )
+            if not is_excluded:
+                filtered_tokens.append(token)
+
+        # If all tokens were filtered, fall back to "."
+        scope_tokens = filtered_tokens if filtered_tokens else ["."]
+
         command = ["npx", "--package=eslint", "--", "eslint", *scope_tokens, "--format", "json"]
+
+        for excluded in exclude_paths:
+            try:
+                relative = excluded.relative_to(target_path)
+            except ValueError:
+                continue
+            command.extend(["--ignore-pattern", f"{relative}/**"])
 
         start = time.monotonic()
         completed = subprocess.run(

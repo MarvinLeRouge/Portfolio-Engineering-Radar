@@ -66,6 +66,25 @@ def test_falls_back_to_target_path_when_no_lint_script(tmp_path):
     assert result.raw_output["results"]
 
 
+@pytest.mark.slow
+def test_excludes_paths_passed_via_exclude_paths(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": "export function add(a, b) {\n  return a + b;\n}\n",
+            "legacy/b.js": "const unused = 1;\n",
+        },
+    )
+    _write_package_json(repo_path, "eslint src legacy")
+
+    runner = EslintLintRunner()
+    result = runner.run(repo_path, exclude_paths=[repo_path / "legacy"])
+
+    flagged = [e for e in result.raw_output["results"] if e["errorCount"] > 0]
+    assert len(flagged) == 0
+
+
 def test_reports_tool_identity():
     runner = EslintLintRunner()
 
