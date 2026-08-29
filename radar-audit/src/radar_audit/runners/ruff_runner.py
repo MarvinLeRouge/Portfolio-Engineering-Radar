@@ -21,13 +21,32 @@ class RuffRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
-        command = ["uvx", "ruff", "check", "--output-format=json", str(target_path)]
+        command = [
+            "uvx",
+            "ruff",
+            "check",
+            "--output-format=json",
+            "--select=F",
+            ".",
+        ]
         if exclude_paths:
-            command.extend(["--exclude", ",".join(f"{p}/**" for p in exclude_paths)])
+            relative_excludes = []
+            for excluded in exclude_paths:
+                try:
+                    relative = excluded.relative_to(target_path)
+                    relative_excludes.append(f"{relative}/**")
+                except ValueError:
+                    pass  # not under target_path, skip
+            if relative_excludes:
+                command.extend(["--exclude", ",".join(relative_excludes)])
 
         start = time.monotonic()
         completed = subprocess.run(
-            command, capture_output=True, text=True, timeout=self.timeout_s
+            command,
+            capture_output=True,
+            text=True,
+            timeout=self.timeout_s,
+            cwd=target_path,
         )
         duration_ms = int((time.monotonic() - start) * 1000)
 
@@ -59,13 +78,10 @@ class RuffRunner:
             count += 1
         return count
 
-    def _is_skipped(
-        self, file_path: Path, target_path: Path, exclude_paths: list[Path]
-    ) -> bool:
+    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
         relative_parts = file_path.relative_to(target_path).parts
         if any(part in _SKIP_DIRNAMES for part in relative_parts):
             return True
         return any(
-            excluded == file_path or excluded in file_path.parents
-            for excluded in exclude_paths
+            excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
         )

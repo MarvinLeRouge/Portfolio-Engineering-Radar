@@ -29,6 +29,3 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/radar_audit"]
-
-[tool.ruff.lint]
-ignore = ["I"]
