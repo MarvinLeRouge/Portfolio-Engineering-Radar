@@ -113,3 +113,33 @@ def test_scores_ten_when_pint_passes(db_session):
 
     assert score is not None
     assert score.value == 10.0
+
+
+def test_lowers_score_and_adds_findings_for_pint_failures(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="pint",
+        tool_version="1.30.5",
+        subproject_path="laravel",
+        command="stub",
+        raw_output={
+            "tool": "pint",
+            "result": "fail",
+            "files": [{"path": "src/A.php", "fixers": ["single_line_empty_body"]}],
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_lint_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 0.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].file == "src/A.php"

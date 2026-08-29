@@ -113,7 +113,7 @@ def _score_pint(
             criterion,
             tool_result,
             "file does not conform to the project's Pint style",
-            file=entry.get("file"),
+            file=entry.get("path"),
         )
     return 0, 1
 
