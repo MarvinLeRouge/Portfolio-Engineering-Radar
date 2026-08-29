@@ -29,9 +29,7 @@ class DependencyCruiserRunner:
             "--output-type",
             "json",
         ]
-        exclude_pattern = self._build_exclude_pattern(target_path, exclude_paths)
-        if exclude_pattern is not None:
-            command.extend(["-x", exclude_pattern])
+        command.extend(["-x", self._build_exclude_pattern(target_path, exclude_paths)])
         command.append(".")
 
         start = time.monotonic()
@@ -52,12 +50,15 @@ class DependencyCruiserRunner:
             duration_ms=duration_ms,
         )
 
-    def _build_exclude_pattern(self, target_path: Path, exclude_paths: list[Path]) -> str | None:
-        relative_patterns = []
+    def _build_exclude_pattern(self, target_path: Path, exclude_paths: list[Path]) -> str:
+        # node_modules always excluded: --no-config disables dependency-cruiser's own
+        # default exclusion, and without it depcruise follows into vendored packages,
+        # producing findings about third-party code instead of the project under audit.
+        relative_patterns = ["node_modules"]
         for excluded in exclude_paths:
             try:
                 relative = excluded.relative_to(target_path)
             except ValueError:
                 continue  # not under target_path, dependency-cruiser will never visit it
             relative_patterns.append(re.escape(relative.as_posix()))
-        return "|".join(relative_patterns) if relative_patterns else None
+        return "|".join(relative_patterns)
