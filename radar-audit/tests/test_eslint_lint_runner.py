@@ -107,6 +107,19 @@ def test_scope_token_not_filtered_when_nested_path_excluded(tmp_path):
     flagged = [e for e in result.raw_output["results"] if e["errorCount"] > 0]
     assert len(flagged) == 0
 
+    # Verify the command actually contains the "src" token (not dropped in favor of ".")
+    # Split command string into tokens and check that "src" appears as a standalone arg
+    command_tokens = result.command.split()
+    assert "src" in command_tokens, (
+        f"Scope token 'src' not found as standalone argument in command. "
+        f"Command tokens: {command_tokens}"
+    )
+    # Verify that the bare "." fallback was NOT used
+    assert "." not in command_tokens, (
+        f"Bare '.' fallback should not be present when 'src' token is preserved. "
+        f"Command tokens: {command_tokens}"
+    )
+
 
 def test_reports_tool_identity():
     runner = EslintLintRunner()
