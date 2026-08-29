@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 import tomllib
@@ -27,9 +28,20 @@ class MypyRunner:
             requirements = target_path / "requirements.txt"
             if requirements.exists():
                 command.extend(["--with-requirements", str(requirements)])
-            command.extend(["mypy", "--output=json", "--ignore-missing-imports", str(target_path)])
+            command.extend(["mypy", "--output=json", "--ignore-missing-imports"])
         else:
-            command = ["uvx", "mypy", "--output=json", "--ignore-missing-imports", str(target_path)]
+            command = ["uvx", "mypy", "--output=json", "--ignore-missing-imports"]
+
+        if exclude_paths:
+            for excluded in exclude_paths:
+                try:
+                    relative = excluded.relative_to(target_path)
+                    # Use regex-escaped path for mypy's --exclude (which expects regex)
+                    command.extend(["--exclude", re.escape(str(relative))])
+                except ValueError:
+                    pass  # not under target_path, skip
+
+        command.append(str(target_path))
 
         start = time.monotonic()
         completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout_s)
