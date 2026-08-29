@@ -9,6 +9,12 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 
+# Directory names always excluded regardless of exclude_paths: --no-config disables
+# dependency-cruiser's own default node_modules exclusion, and none of these hold
+# code written by the audited project -- node_modules is vendored, dist/build are
+# compiled/bundled output (e.g. a Vite build under public/build).
+_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "dist", "build")
+
 
 class DependencyCruiserRunner:
     """Detects circular JS/TS dependencies via dependency-cruiser (criterion 1.1)."""
@@ -29,9 +35,7 @@ class DependencyCruiserRunner:
             "--output-type",
             "json",
         ]
-        exclude_pattern = self._build_exclude_pattern(target_path, exclude_paths)
-        if exclude_pattern is not None:
-            command.extend(["-x", exclude_pattern])
+        command.extend(["-x", self._build_exclude_pattern(target_path, exclude_paths)])
         command.append(".")
 
         start = time.monotonic()
@@ -52,12 +56,12 @@ class DependencyCruiserRunner:
             duration_ms=duration_ms,
         )
 
-    def _build_exclude_pattern(self, target_path: Path, exclude_paths: list[Path]) -> str | None:
-        relative_patterns = []
+    def _build_exclude_pattern(self, target_path: Path, exclude_paths: list[Path]) -> str:
+        relative_patterns = [rf"(^|/){re.escape(name)}(/|$)" for name in _ALWAYS_EXCLUDED_DIRNAMES]
         for excluded in exclude_paths:
             try:
                 relative = excluded.relative_to(target_path)
             except ValueError:
                 continue  # not under target_path, dependency-cruiser will never visit it
             relative_patterns.append(re.escape(relative.as_posix()))
-        return "|".join(relative_patterns) if relative_patterns else None
+        return "|".join(relative_patterns)

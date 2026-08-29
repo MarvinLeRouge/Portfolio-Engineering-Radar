@@ -114,10 +114,13 @@ def planned_runs(plan: AuditPlan, runners: list[ToolRunner]) -> list[PlannedRun]
     """The exact (target_path, runner) pairs execute_audit will invoke -- shared
     with the CLI's --dry-run preview so the two never drift out of sync (a
     repo-scope runner runs once per audit; a subproject-scope runner runs
-    once per matching-stack subproject).
+    once per matching-stack physical target, even when several subprojects
+    at the same path differ only by stack -- e.g. a PHP + JS monorepo with
+    no folder separation).
     """
     runs: list[PlannedRun] = []
     repo_scope_done: set[str] = set()
+    subproject_scope_done: set[tuple[Path, str]] = set()
     for subproject in plan.subprojects:
         for runner in runners:
             if runner.scope == "repo":
@@ -128,6 +131,10 @@ def planned_runs(plan: AuditPlan, runners: list[ToolRunner]) -> list[PlannedRun]
             else:
                 if subproject.stack not in runner.supported_stacks:
                     continue
+                key = (subproject.path, runner.tool_name)
+                if key in subproject_scope_done:
+                    continue
+                subproject_scope_done.add(key)
                 runs.append(PlannedRun(subproject.path, runner))
     return runs
 
