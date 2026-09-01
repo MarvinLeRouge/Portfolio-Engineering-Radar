@@ -19,6 +19,13 @@ class VitestRunner:
     plan-writing and fails (ERESOLVE on unpinned versions; "Cannot find package" at
     runtime even with pinned matching versions) -- resolved by invoking the target's
     own node_modules/.bin/vitest directly instead.
+
+    `exclude_paths` (other git worktrees of the same repo) is forwarded as one
+    `--exclude` glob per path -- Vitest's own default test glob recurses the whole
+    project tree, so a worktree checked out under the repo (e.g.
+    `.claude/worktrees/<branch>/`) is otherwise collected a second time, inflating
+    counts and, if that worktree carries stale/foreign spec files (e.g. Playwright
+    `.spec.js` files that don't parse as Vitest tests), failing the whole run.
     """
 
     tool_name = "vitest"
@@ -44,6 +51,12 @@ class VitestRunner:
             coverage_dir = Path(report_dir) / "coverage"
 
             command = [str(local_bin), "run", "--reporter=json", f"--outputFile={report_path}"]
+            for excluded in exclude_paths:
+                try:
+                    relative = excluded.relative_to(target_path)
+                except ValueError:
+                    continue
+                command.extend(["--exclude", f"{relative}/**"])
             if has_coverage_provider:
                 command += [
                     "--coverage",
