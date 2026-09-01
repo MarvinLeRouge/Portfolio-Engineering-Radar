@@ -15,7 +15,7 @@ _COMPLEXITY_PATTERN = re.compile(r"complexity of (\d+)")
 
 
 class EslintComplexityRunner:
-    """Runs an ephemeral ESLint with an audit-owned max:1 complexity config (criterion 2.3)."""
+    """Run ESLint with audit-owned ["error", 0] complexity config (criterion 2.3)."""
 
     tool_name = "eslint-complexity"
     tool_version = "1.0.0"
@@ -25,7 +25,7 @@ class EslintComplexityRunner:
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         with tempfile.NamedTemporaryFile(
-            "w", suffix=".config.js", delete=False, dir=target_path
+            "w", suffix=".config.cjs", delete=False, dir=target_path
         ) as config_file:
             config_file.write(_AUDIT_CONFIG)
             config_path = Path(config_file.name)
