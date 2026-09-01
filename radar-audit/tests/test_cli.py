@@ -102,8 +102,11 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         audits = session.exec(select(Audit)).all()
         assert len(audits) == 1
         results = session.exec(select(ToolResult)).all()
-        # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped
-        # DesignDocRunner (stack-independent) runs; the other four are subproject-scoped
-        # and skip an "unknown" stack.
-        assert len(results) == 1
-        assert results[0].tool_name == "design-doc-presence"
+        # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped,
+        # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner)
+        # run; every subproject-scoped runner skips an "unknown" stack.
+        assert {r.tool_name for r in results} == {
+            "design-doc-presence",
+            "pre-commit-gate",
+            "jscpd",
+        }

@@ -29,3 +29,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/radar_audit"]
+
+[tool.pytest.ini_options]
+markers = ["slow: real npx/npm fetch, needs network"]

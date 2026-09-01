@@ -12,9 +12,20 @@ from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, plann
 from radar_audit.runner import ToolRunner
 from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
 from radar_audit.runners.design_doc_runner import DesignDocRunner
+from radar_audit.runners.eslint_complexity_runner import EslintComplexityRunner
+from radar_audit.runners.eslint_lint_runner import EslintLintRunner
+from radar_audit.runners.jscpd_runner import JscpdRunner
+from radar_audit.runners.mypy_runner import MypyRunner
+from radar_audit.runners.phpmd_complexity_runner import PhpmdComplexityRunner
+from radar_audit.runners.phpstan_runner import PhpstanRunner
+from radar_audit.runners.pint_runner import PintRunner
+from radar_audit.runners.precommit_gate_runner import PreCommitGateRunner
 from radar_audit.runners.pydeps_runner import PydepsRunner
+from radar_audit.runners.radon_complexity_runner import RadonComplexityRunner
 from radar_audit.runners.radon_module_size_runner import RadonModuleSizeRunner
+from radar_audit.runners.ruff_runner import RuffRunner
 from radar_audit.runners.static_loc_runner import StaticLocRunner
+from radar_audit.runners.typescript_runner import TypeScriptRunner
 
 app = typer.Typer()
 
@@ -25,6 +36,17 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     DesignDocRunner(),
     RadonModuleSizeRunner(),
     StaticLocRunner(),
+    RuffRunner(),
+    EslintLintRunner(),
+    PintRunner(),
+    MypyRunner(),
+    TypeScriptRunner(),
+    PhpstanRunner(),
+    RadonComplexityRunner(),
+    EslintComplexityRunner(),
+    PhpmdComplexityRunner(),
+    PreCommitGateRunner(),
+    JscpdRunner(),
 ]
 
 
