@@ -135,6 +135,30 @@ def test_reports_zero_collected_as_no_tests(tmp_path):
     assert result.raw_output["tests"]["total"] == 0
 
 
+@pytest.mark.slow
+def test_reports_fallback_when_tests_directory_missing(tmp_path):
+    """Pest writes a 0-byte junit.xml (not "file absent") and exits 2 when its
+    configured tests/ directory doesn't exist -- verify the ParseError guard falls
+    back to the contracted raw_output shape instead of crashing.
+    """
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"phpunit.xml": _PHPUNIT_XML, "src/Calculator.php": _CALCULATOR_PHP},
+    )
+    _install_local_pest(repo_path)
+
+    runner = PestRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 2
+    assert result.raw_output == {
+        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+        "failures": [],
+        "coverage_percent": None,
+    }
+
+
 def test_reports_missing_binary_as_unusable(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(repo_path, files={"src/Calculator.php": "<?php\n"})
