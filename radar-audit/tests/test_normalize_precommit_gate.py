@@ -194,6 +194,24 @@ def test_husky_domain_split_via_directory_scoped_files_pattern(db_session):
     }
 
 
+def test_pint_covers_both_lint_and_format_for_php_backend(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    backend_evidence = _stack_evidence(audit.id, "phpstan", "backend")
+    gate = _gate_result(audit.id, "pre-commit", [{"id": "pint", "files": None}])
+    db_session.add_all([backend_evidence, gate])
+    db_session.commit()
+
+    score = normalize_precommit_gate(db_session, scoring_run, criterion, [backend_evidence, gate])
+
+    assert score is not None
+    assert score.value == pytest.approx(2 / 3 * 10)
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].description == "No pre-commit type-check hook covers backend"
+
+
 def test_unrecognized_hook_id_is_ignored(db_session):
     audit, scoring_run, criterion = _setup(db_session)
     backend_evidence = _stack_evidence(audit.id, "ruff-check", "backend")

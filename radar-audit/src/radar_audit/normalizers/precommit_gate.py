@@ -42,6 +42,16 @@ _HOOK_ID_CLASSIFICATION: dict[str, tuple[str, str]] = {
     "phpstan": ("type-check", "backend"),
 }
 
+# Hook ids that straddle two validator types in practice and should count toward
+# both cells when detected -- currently only Pint, which enforces both formatting
+# and lint-like style rules in a single pass for PHP (docs/toolchain.md's
+# Summit-Stats worked example flags this as an open "definitional note", resolved
+# here: Pint covers both lint and format for backend, closing an otherwise
+# uncoverable format/backend cell for PHP-only repos).
+_STRADDLING_VALIDATOR_TYPES: dict[str, str] = {
+    "pint": "format",
+}
+
 
 def normalize_precommit_gate(
     session: Session,
@@ -69,9 +79,9 @@ def normalize_precommit_gate(
         (validator_type, domain): False for domain in domains for validator_type in _VALIDATOR_TYPES
     }
     for entry in entries:
-        classified = _classify_entry(entry)
-        if classified is not None and classified in cells:
-            cells[classified] = True
+        for classified in _classify_entry(entry):
+            if classified in cells:
+                cells[classified] = True
 
     applicable = len(cells)
     covered = sum(1 for is_covered in cells.values() if is_covered)
@@ -116,13 +126,13 @@ def _domains_present(tool_results: list[ToolResult]) -> set[str]:
     }
 
 
-def _classify_entry(entry: dict[str, str | None]) -> tuple[str, str] | None:
+def _classify_entry(entry: dict[str, str | None]) -> list[tuple[str, str]]:
     hook_id = entry.get("id")
     if not isinstance(hook_id, str):
-        return None
+        return []
     base = _HOOK_ID_CLASSIFICATION.get(hook_id)
     if base is None:
-        return None
+        return []
     validator_type, default_domain = base
     files = entry.get("files")
     if isinstance(files, str) and "backend" in files:
@@ -131,4 +141,8 @@ def _classify_entry(entry: dict[str, str | None]) -> tuple[str, str] | None:
         domain = "frontend"
     else:
         domain = default_domain
-    return (validator_type, domain)
+    classified = [(validator_type, domain)]
+    extra_validator_type = _STRADDLING_VALIDATOR_TYPES.get(hook_id)
+    if extra_validator_type is not None:
+        classified.append((extra_validator_type, domain))
+    return classified
