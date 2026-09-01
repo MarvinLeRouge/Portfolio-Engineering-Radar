@@ -24,10 +24,13 @@ def test_dry_run_prints_plan_and_writes_nothing_to_disk(tmp_path):
 
     assert result.exit_code == 0
     assert "sample-repo" in result.stdout
-    # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped
-    # DesignDocRunner (stack-independent) is planned; the other four are
-    # subproject-scoped and skip an "unknown" stack.
+    # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped,
+    # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner,
+    # IntegrationTestRunner, CiWorkflowRunner) are planned; the subproject-scoped
+    # runners skip an "unknown" stack.
     assert "design-doc-presence" in result.stdout
+    assert "integration-test-heuristic" in result.stdout
+    assert "ci-workflow" in result.stdout
     assert "dependency-cruiser" not in result.stdout
     assert "pydeps" not in result.stdout
     assert "radon-raw" not in result.stdout
@@ -103,10 +106,13 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         assert len(audits) == 1
         results = session.exec(select(ToolResult)).all()
         # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped,
-        # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner)
-        # run; every subproject-scoped runner skips an "unknown" stack.
+        # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner,
+        # IntegrationTestRunner, CiWorkflowRunner) run; every subproject-scoped
+        # runner skips an "unknown" stack.
         assert {r.tool_name for r in results} == {
             "design-doc-presence",
             "pre-commit-gate",
             "jscpd",
+            "integration-test-heuristic",
+            "ci-workflow",
         }
