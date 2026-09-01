@@ -86,6 +86,33 @@ def test_reports_zero_when_no_test_files_exist(tmp_path):
     assert result.raw_output["integration_test_files"] == 0
 
 
+def test_classification_unaffected_by_ancestor_directory_name(tmp_path):
+    """A repo checked out under a parent directory named `integration` must not be
+    misclassified: only path components inside the repo itself matter (regression
+    test for the bug where `_classify` read `file_path.parts` instead of the path
+    relative to `target_path`).
+    """
+    fixture_files = {"tests/test_unit.py": "def test_unit():\n    assert True\n"}
+
+    neutral_repo_path = tmp_path / "neutral" / "repo"
+    init_git_repo(neutral_repo_path, files=fixture_files)
+    neutral_result = IntegrationTestRunner().run(neutral_repo_path, exclude_paths=[])
+
+    integration_repo_path = tmp_path / "integration" / "repo"
+    init_git_repo(integration_repo_path, files=fixture_files)
+    integration_result = IntegrationTestRunner().run(integration_repo_path, exclude_paths=[])
+
+    assert integration_result.raw_output["integration_test_files"] == 0
+    assert (
+        integration_result.raw_output["integration_test_files"]
+        == neutral_result.raw_output["integration_test_files"]
+    )
+    assert (
+        integration_result.raw_output["total_test_files"]
+        == neutral_result.raw_output["total_test_files"]
+    )
+
+
 def test_reports_tool_identity():
     runner = IntegrationTestRunner()
 

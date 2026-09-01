@@ -31,7 +31,7 @@ class IntegrationTestRunner:
                 continue
             if self._is_skipped(file_path, target_path, exclude_paths):
                 continue
-            classification = self._classify(file_path)
+            classification = self._classify(file_path, target_path)
             if classification is None:
                 continue
             files.append(
@@ -56,8 +56,8 @@ class IntegrationTestRunner:
             duration_ms=duration_ms,
         )
 
-    def _classify(self, file_path: Path) -> bool | None:
-        parts = file_path.parts
+    def _classify(self, file_path: Path, target_path: Path) -> bool | None:
+        parts = file_path.relative_to(target_path).parts
         name = file_path.name
         suffix = file_path.suffix
 
