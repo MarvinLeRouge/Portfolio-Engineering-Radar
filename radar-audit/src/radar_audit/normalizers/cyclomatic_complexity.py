@@ -9,7 +9,18 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-_RELEVANT_TOOLS = {"radon-cc", "eslint-complexity", "phpmd-codesize"}
+# Each tool's own convention for "ran successfully and produced usable
+# data" differs (confirmed against a real portfolio repo in Task 17):
+# radon-cc always exits 0; eslint-complexity is configured with
+# `complexity: ["error", 0]` so it exits 1 on virtually every real file
+# with a function; phpmd's codesize ruleset exits 2 (not 1) when it finds
+# violations, reserving 0 for a clean scan.
+_USABLE_EXIT_CODES_BY_TOOL = {
+    "radon-cc": {0},
+    "eslint-complexity": {0, 1},
+    "phpmd-codesize": {0, 2},
+}
+_RELEVANT_TOOLS = set(_USABLE_EXIT_CODES_BY_TOOL)
 # Bands: <=10->10, 11-20->6, 21-30->4, >30->2 (spec §3.3). Resolved during
 # design but provisional -- not yet calibrated against real portfolio data
 # (spec §11), same discipline as 2.1's 30-line/400-LOC thresholds.
@@ -24,7 +35,9 @@ def normalize_cyclomatic_complexity(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
-    relevant = [r for r in tool_results if r.tool_name in _RELEVANT_TOOLS and r.exit_code == 0]
+    relevant = [
+        r for r in tool_results if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+    ]
     if not relevant:
         return None
 

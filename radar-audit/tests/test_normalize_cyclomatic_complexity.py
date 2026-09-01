@@ -133,3 +133,72 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_counts_eslint_complexity_result_with_exit_code_one(db_session):
+    # eslint-complexity is configured with `complexity: ["error", 0]`, so on a
+    # real repo it exits 1 whenever it finds any function at all -- exit 1 is
+    # its normal "ran fine, found data" outcome, not a failure.
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="eslint-complexity",
+        tool_version="1.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={"complexities": [{"file": "src/a.js", "line": 1, "complexity": 3}]},
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 10.0
+
+
+def test_counts_phpmd_codesize_result_with_exit_code_two(db_session):
+    # phpmd's codesize ruleset exits 2 (not 1) when it finds violations,
+    # reserving 0 for a clean scan -- confirmed against a real repo.
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="phpmd-codesize",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={"violations": [{"file": "src/a.php", "line": 18, "complexity": 12}]},
+        exit_code=2,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 6.0
+
+
+def test_ignores_phpmd_codesize_result_with_exit_code_one(db_session):
+    # exit 1 is not part of phpmd's own 0/2 convention (0=clean, 2=violations),
+    # so a phpmd-codesize result with exit_code=1 must be treated as unusable.
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="phpmd-codesize",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={"violations": [{"file": "src/a.php", "line": 18, "complexity": 12}]},
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
