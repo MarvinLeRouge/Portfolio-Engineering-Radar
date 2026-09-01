@@ -69,3 +69,20 @@ def test_reports_tool_identity():
     assert runner.tool_name == "pytest-cov"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"python"})
+
+
+def test_fallback_when_junit_xml_not_created(tmp_path):
+    """When pytest fails before writing junit.xml, raw_output still conforms to contract."""
+    runner = PytestCoverageRunner()
+    # Non-existent path causes subprocess to fail without producing junit.xml
+    nonexistent_path = tmp_path / "does-not-exist"
+
+    result = runner.run(nonexistent_path, exclude_paths=[])
+
+    # raw_output must conform to the contract even when junit.xml wasn't created
+    assert result.raw_output["tests"]["total"] == 0
+    assert result.raw_output["tests"]["passed"] == 0
+    assert result.raw_output["tests"]["failed"] == 0
+    assert result.raw_output["tests"]["skipped"] == 0
+    assert result.raw_output["failures"] == []
+    assert result.raw_output["coverage_percent"] is None

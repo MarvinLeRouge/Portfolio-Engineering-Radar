@@ -42,15 +42,33 @@ class PytestCoverageRunner:
             )
 
             start = time.monotonic()
-            completed = subprocess.run(
-                command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-            )
+            try:
+                completed = subprocess.run(
+                    command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
+                )
+            except (FileNotFoundError, OSError):
+                # target_path doesn't exist or is inaccessible; treat as "no tests"
+                duration_ms = int((time.monotonic() - start) * 1000)
+                return RawToolOutput(
+                    command=" ".join(command),
+                    raw_output={
+                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+                        "failures": [],
+                        "coverage_percent": None,
+                    },
+                    exit_code=1,
+                    duration_ms=duration_ms,
+                )
             duration_ms = int((time.monotonic() - start) * 1000)
 
             if not junit_path.exists():
                 return RawToolOutput(
                     command=" ".join(command),
-                    raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
+                    raw_output={
+                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+                        "failures": [],
+                        "coverage_percent": None,
+                    },
                     exit_code=completed.returncode,
                     duration_ms=duration_ms,
                 )
