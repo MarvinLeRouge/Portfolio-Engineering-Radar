@@ -26,6 +26,20 @@ class TypeScriptRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        if not (target_path / "tsconfig.json").exists():
+            # No tsconfig.json means this JS subproject doesn't opt into
+            # TypeScript checking at all; running tsc anyway would just print
+            # its usage banner to stdout and exit 1, which downstream
+            # normalizers would misread as "0 diagnostics on N files" (a
+            # perfect score) instead of "not applicable" (discovered against
+            # a real portfolio repo in Task 17 -- see spec §7's N/A guidance).
+            return RawToolOutput(
+                command="<skipped: no tsconfig.json>",
+                raw_output={"diagnostics": [], "total_files": 0},
+                exit_code=0,
+                duration_ms=0,
+            )
+
         package_json = target_path / "package.json"
         data = json.loads(package_json.read_text()) if package_json.exists() else {}
         package_name, binary_name = self._resolve_package_and_binary(data)

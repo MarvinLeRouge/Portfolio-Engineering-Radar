@@ -54,6 +54,20 @@ def test_reports_a_type_error(tmp_path):
     assert len(result.raw_output["diagnostics"]) >= 1
 
 
+def test_skips_running_tsc_when_no_tsconfig_present(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path, files={"src/a.js": "export function add(a, b) {\n  return a + b;\n}\n"}
+    )
+    (repo_path / "package.json").write_text(json.dumps({"name": "fixture", "version": "1.0.0"}))
+
+    runner = TypeScriptRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    assert result.raw_output == {"diagnostics": [], "total_files": 0}
+
+
 def test_uses_typescript_package_when_vue_tsc_not_a_dev_dependency():
     runner = TypeScriptRunner()
 
