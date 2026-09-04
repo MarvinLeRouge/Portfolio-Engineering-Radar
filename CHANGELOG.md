@@ -166,3 +166,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Scaffold workspace package
 - *(docs)* Add gitignored docs/work-in-progress directory
 - *(docs)* Add changelog automation
+- *(changelog)* Homogenize changelog workflow
