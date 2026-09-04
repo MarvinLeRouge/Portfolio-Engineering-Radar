@@ -124,21 +124,20 @@ La méthodologie doit être établie avant le premier audit complet du portfolio
 
 ## État du projet
 
-**Phase initiale de conception et d'architecture.**
+**Phase 4 : implémentation du système, en cours.**
 
-Le premier objectif est d'établir une base rigoureuse et reproductible avant d'implémenter le dashboard ou de lancer un audit complet du portfolio.
+Le modèle de données (`radar-core`) et le moteur d'orchestration/normalisation des outils (`radar-audit`) sont implémentés et en développement actif. `radar-audit` couvre actuellement les catégories 1 (Architecture & conception), 2 (Qualité du code) et 3 (Tests & fiabilité) du Quality Framework ; les catégories restantes, le dashboard local et la génération de rapports restent à faire. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
 
 ## Documentation
 
-La documentation couvrira progressivement :
-
-- architecture du système
-- framework de qualité
-- modèle de notation
-- sélection de la toolchain
-- méthodologie d'audit
-- roadmap
-- décisions d'architecture
+- [Conception du système](docs/architecture/) — architecture par composant (`radar-core`, `radar-audit`)
+- [Quality Framework](docs/quality-framework.md) — méthodologie versionnée : taxonomie, notation, modèle de confiance
+- [Toolchain](docs/toolchain.md) — outils d'analyse évalués et sélectionnés par domaine
+- [Roadmap](docs/roadmap.md) — avancement phase par phase
+- [Architecture Decision Records](docs/adr/) — décisions enregistrées individuellement
+- [Guide développeur](docs/guides/developer_guide.md) — installation locale, tests, pre-commit
+- [Contexte produit](docs/product-context.md) — cadrage du problème et usage visé
+- [Opérations](docs/operations.md) — faire tourner le système en local
 
 ## Langues
 
@@ -147,4 +146,4 @@ La documentation couvrira progressivement :
 
 ## Licence
 
-Licence à définir.
+[MIT](LICENSE)
