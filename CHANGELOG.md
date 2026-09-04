@@ -132,6 +132,19 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add contribution guide
 - Add code of conduct
 - Add GitHub PR and issue templates
+- Add published roadmap mirror
+- Add developer guide
+- Add minimal product context
+- Add minimal operations reference
+- Add radar-core architecture doc
+- Add radar-audit architecture doc
+- Mark system-design.md as a superseded historical archive
+- Split open-decisions.md into individual ADRs
+- Relocate open-decisions.md to work-in-progress
+- Add French translation of quality-framework.md
+- Add French translation of toolchain.md
+- Add French translation of pilot-audit-geochallenge-tracker.md
+- Add French translation of pilot-audit-summit-stats.md
 
 ### 🧪 Testing
 
@@ -152,3 +165,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Ignore .superpowers/ sdd workspace directory
 - *(radar-audit)* Scaffold workspace package
 - *(docs)* Add gitignored docs/work-in-progress directory
+- *(docs)* Add changelog automation
