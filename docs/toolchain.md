@@ -1,5 +1,7 @@
 # Toolchain — Phase 1
 
+> [Version française](toolchain.fr.md) | English version
+
 > Status: in progress. Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
 > Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see [`docs/adr/0004-toolchain-installation-strategy.md`](adr/0004-toolchain-installation-strategy.md).
 > **npx safety rule (found 2026-08-26, see Architecture/dependencies below):** npm lets a package publish a CLI binary under any name, independent of the package name — `npx <bin-name>` resolves by *bin name*, which is a dependency-confusion vector if an unrelated (or malicious) package happens to claim that same bin name in the registry. Always invoke as `npx --package=<exact-npm-package-name> -- <bin-name>`, never bare `npx <bin-name>`, for every ephemeral npx-based tool in this document, including ones already validated above before this rule was found (`tsc`, whose package is `typescript`, not `tsc`).
