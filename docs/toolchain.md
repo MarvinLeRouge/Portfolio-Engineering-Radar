@@ -1,7 +1,9 @@
 # Toolchain — Phase 1
 
+> [Version française](toolchain.fr.md) | English version
+
 > Status: in progress. Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
-> Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see `docs/open-decisions.md#d7`.
+> Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see [`docs/adr/0004-toolchain-installation-strategy.md`](adr/0004-toolchain-installation-strategy.md).
 > **npx safety rule (found 2026-08-26, see Architecture/dependencies below):** npm lets a package publish a CLI binary under any name, independent of the package name — `npx <bin-name>` resolves by *bin name*, which is a dependency-confusion vector if an unrelated (or malicious) package happens to claim that same bin name in the registry. Always invoke as `npx --package=<exact-npm-package-name> -- <bin-name>`, never bare `npx <bin-name>`, for every ephemeral npx-based tool in this document, including ones already validated above before this rule was found (`tsc`, whose package is `typescript`, not `tsc`).
 
 ---
@@ -25,7 +27,7 @@
 
 ## Dependency freshness (category 11)
 
-Distinct from the Security domain's CVE-based audits above: these tools flag dependencies that are outdated but not necessarily vulnerable (no CVE filed). Detailed category-11 criteria are still deferred to Phase 2 (`docs/open-decisions.md#d8`); this is only the toolchain candidate list.
+Distinct from the Security domain's CVE-based audits above: these tools flag dependencies that are outdated but not necessarily vulnerable (no CVE filed). Detailed category-11 criteria are still deferred to Phase 2 (see [`docs/adr/0005-taxonomy-adjustments-deferred.md`](adr/0005-taxonomy-adjustments-deferred.md)); this is only the toolchain candidate list.
 
 | Tool | Availability | License | Verdict |
 |---|---|---|---|
@@ -33,7 +35,7 @@ Distinct from the Security domain's CVE-based audits above: these tools flag dep
 | `npm outdated` / `pnpm outdated` | Native (npm/pnpm already present) — `npm outdated --json` smoke-tested on GeoChallenge-Tracker, `pnpm outdated --format json` on HiveMind, both clean structured output | part of npm/pnpm | **Keep** |
 | `composer outdated` | Native (composer already present) — `composer outdated --format=json` smoke-tested on Summit-Stats, clean output, bonus `release-age`/`abandoned`/`latest-status` fields | part of Composer | **Keep** |
 
-**Config decision (2026-08-26, see `docs/open-decisions.md#d15`):** all three require a network call to a public package registry (PyPI, npm, Packagist) to know the latest available version. Gated behind the same opt-in-per-run mechanism as GitHub API access (D6), read-only, not enabled by default.
+**Config decision (2026-08-26, see [`docs/adr/0012-registry-network-access-dependency-freshness.md`](adr/0012-registry-network-access-dependency-freshness.md)):** all three require a network call to a public package registry (PyPI, npm, Packagist) to know the latest available version. Gated behind the same opt-in-per-run mechanism as GitHub API access ([0003](adr/0003-github-api-network-access.md)), read-only, not enabled by default.
 
 **License compliance (category 11.2 gap, researched 2026-08-26) — unlike freshness above, none of these three need a network call**, since license metadata is already present in the target's own installed/locked packages — not gated behind D15/D6.
 

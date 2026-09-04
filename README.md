@@ -124,21 +124,20 @@ The methodology must be established before the first full portfolio assessment.
 
 ## Status
 
-**Early design / architecture phase.**
+**Phase 4: system implementation, in progress.**
 
-The first milestone is to establish a rigorous and reproducible foundation before implementing the dashboard or running a complete portfolio audit.
+The data model (`radar-core`) and the tool orchestration/normalization engine (`radar-audit`) are implemented and under active development. `radar-audit` currently covers Quality Framework categories 1 (Architecture & design), 2 (Code quality), and 3 (Testing & reliability); the remaining categories, the local dashboard, and report generation are still to come. See `docs/roadmap.md` for the detailed, up-to-date status.
 
 ## Documentation
 
-Documentation will progressively cover:
-
-- system architecture
-- quality framework
-- scoring model
-- toolchain selection
-- audit methodology
-- roadmap
-- architectural decisions
+- [System design](docs/architecture/) — architecture per component (`radar-core`, `radar-audit`)
+- [Quality Framework](docs/quality-framework.md) — versioned methodology: taxonomy, scoring, confidence model
+- [Toolchain](docs/toolchain.md) — analysis tools evaluated and selected per domain
+- [Roadmap](docs/roadmap.md) — phase-by-phase progress
+- [Architecture Decision Records](docs/adr/) — individually recorded decisions
+- [Developer guide](docs/guides/developer_guide.md) — local setup, tests, pre-commit
+- [Product context](docs/product-context.md) — problem framing and intended use
+- [Operations](docs/operations.md) — running the system locally
 
 ## Language
 
@@ -147,4 +146,4 @@ Documentation will progressively cover:
 
 ## License
 
-License to be defined.
+[MIT](LICENSE)

@@ -1,9 +1,16 @@
 # System Design — Phase 0
 
-> Status: Phase 0 draft (architecture proposal, not implemented).
-> Methodology reference: none yet — Quality Framework v1.0 is not frozen until Phase 2/3.
+> **Historical archive.** This is the original Phase 0 design proposal,
+> kept as-is for context. It has since been superseded by the
+> implementation: see [`docs/architecture/`](architecture/) for the
+> current per-component architecture, [`docs/quality-framework.md`](quality-framework.md)
+> for the frozen methodology, and [`docs/roadmap.md`](roadmap.md) for
+> current status. Not translated (archive, not reader-facing).
 
-This document separates, as required by the master prompt, what was **observed**, what is **interpreted**, and what is **proposed**. Nothing here is final: items requiring a decision are cross-referenced to `docs/open-decisions.md`.
+> Status: Phase 0 draft (architecture proposal, not implemented at the time of writing).
+> Methodology reference: none yet at the time of writing — Quality Framework v1.0 is now frozen, see `docs/quality-framework.md`.
+
+This document separates, as required by the master prompt, what was **observed**, what is **interpreted**, and what is **proposed**. It reflects the state of the project at Phase 0; items marked as requiring a decision were tracked in the now-relocated `docs/work-in-progress/open-decisions.md` and have since been resolved (see `docs/adr/`).
 
 ---
 

@@ -1,7 +1,13 @@
-# Development Roadmap
+# Roadmap
 
-Tracks progress phase by phase, per the master prompt (`docs/ai/Prompt maître — Portfolio Engineering Quality System.md`).
-Checkboxes are updated at the end of each phase. This file will later feed the README roadmap section.
+> [Version française](roadmap.fr.md) | English version
+
+Published, versioned mirror of the project's development roadmap. The
+working, non-versioned tracker (updated more frequently during active
+development) lives at `docs/work-in-progress/TODO.md`.
+
+Tracks progress phase by phase. Checkboxes are updated as each phase
+advances.
 
 ## Phase 0 — Audit system architecture
 
@@ -20,40 +26,42 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 - [x] Propose the candidate tool list
 - [x] Identify points requiring a human decision
 - [x] Produce `docs/system-design.md`
-- [x] Produce `docs/open-decisions.md`
-- [x] **Human review of `docs/open-decisions.md` (D1–D14) — blocks Phase 1**
+- [x] Produce architecture decision records (`docs/adr/`)
+- [x] Human review of the open decisions — blocked Phase 1 until resolved
 
 ## Phase 1 — Toolchain discovery and selection
 
 - [x] Evaluate candidate tools per language/domain (security, Python, JS/TS, PHP, architecture/dependencies, containers, Git/CI)
 - [x] Validate local availability and licensing of retained tools
-- [x] Document the final toolchain and rejected alternatives
+- [x] Document the final toolchain and rejected alternatives (`docs/toolchain.md`)
 
 ## Phase 2 — Final definition of categories, rules, criteria, scoring
 
 - [x] Finalize the taxonomy (categories + justified adjustments)
 - [x] Define measurable criteria per category (objective, evidence, tools, levels, weight, dependencies, confidence, false positives)
-- [x] Define the hierarchical scoring model (criterion → category → global)
+- [x] Define the hierarchical scoring model (criterion -> category -> global)
 - [x] Define critical penalties, N/A handling, missing-data handling
-- [x] Freeze **Quality Framework v1.0**
+- [x] Freeze **Quality Framework v1.0** (`docs/quality-framework.md`)
 
 ## Phase 3 — Calibration on a pilot repository
 
-- [x] Select the pilot repository (GeoChallenge-Tracker, see `docs/open-decisions.md#d9`)
-- [x] Run a full audit against it (manual pass, see `docs/pilot-audit-geochallenge-tracker.md`)
+- [x] Select the pilot repository (see `docs/pilot-audit-geochallenge-tracker.md`)
+- [x] Run a full audit against it (manual pass)
 - [x] Review criteria relevance, false positives/negatives, weights, effort
-- [x] Run a second pilot audit on a structurally different repo (Summit-Stats, Laravel/PHP + Vue/JS, see `docs/pilot-audit-summit-stats.md`) to check cross-repo consistency
-- [x] Correct the framework based on findings (Gitleaks P1 pre-filter and its `.env.*.example` broadening, mypy/ESLint/knip invocation fixes, Larastan in-repo install fix, isolated Composer scratch per PHP tool, generalized git-worktree exclusion, evidence-freshness rule)
+- [x] Run a second pilot audit on a structurally different repository (Laravel/PHP + Vue/JS, see `docs/pilot-audit-summit-stats.md`) to check cross-repo consistency
+- [x] Correct the framework based on findings
 - [x] Confirm Quality Framework v1.0 as the reference for the first global audit
 
 ## Phase 4 — System implementation
 
 - [x] Implement the data model (Repository, Audit, MethodologyVersion, Category, Criterion, Finding, Score, Evidence, Recommendation, ImprovementTask, RoadmapItem, Snapshot, ToolResult)
 - [ ] Implement tool orchestration and raw-result normalization
-  - [x] Core orchestration engine (`radar-audit`, increment 2.0): portfolio config, sub-project discovery, worktree exclusion, `ToolRunner` protocol with crash isolation, Quality Framework v1.0 taxonomy seeding, Repository/Audit resolution, Typer CLI
-  - [ ] Raw-result normalization per Quality Framework category (increments 2.1–2.15, one per category)
-    - [x] Category 1 — Architecture & design (increment 2.1): dependency-cruiser + pydeps, DESIGN.md/ARCHITECTURE.md/ADR presence, radon + static LOC module size
-    - [ ] Categories 2–15 (increments 2.2–2.15)
+  - [x] Core orchestration engine (`radar-audit`): portfolio config, sub-project discovery, worktree exclusion, `ToolRunner` protocol with crash isolation, Quality Framework v1.0 taxonomy seeding, Repository/Audit resolution, Typer CLI
+  - [ ] Raw-result normalization per Quality Framework category (one increment per category)
+    - [x] Category 1 — Architecture & design: dependency-cruiser + pydeps, DESIGN.md/ARCHITECTURE.md/ADR presence, radon + static LOC module size
+    - [x] Category 2 — Code quality: lint pass rate, type-check pass rate, cyclomatic complexity, pre-commit gate, code duplication
+    - [x] Category 3 — Testing & reliability: unit test pass rate, integration tests, CI test execution, E2E test presence
+    - [ ] Categories 4-15 (Security, Maintainability, Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
 - [ ] Implement the local dashboard (backend + frontend)
 - [ ] Implement report generation (global + per-repository)
 
@@ -73,5 +81,5 @@ Checkboxes are updated at the end of each phase. This file will later feed the R
 
 - [ ] Re-audit after implementation work
 - [ ] Detect resolved/new/regressed findings with evidence
-- [ ] Detect roadmap ↔ code divergence
+- [ ] Detect roadmap <-> code divergence
 - [ ] Track system self-metrics (score stability, false-positive rate, reproducibility)

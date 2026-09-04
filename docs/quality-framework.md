@@ -1,5 +1,7 @@
 # Quality Framework v1.0
 
+> [Version française](quality-framework.fr.md) | English version
+
 > Status: **frozen, 2026-08-26.** Reviewed point-by-point (taxonomy, scoring archetypes, weights, critical penalties, N/A/missing-data handling, per-category criteria, toolchain gaps) directly with the developer, the same review discipline applied to `open-decisions.md` for Phase 0. This is the reference methodology for Phase 3 (pilot calibration) and beyond, per the versioning rules in §6.
 >
 > Builds on `docs/system-design.md` (data model §5, confidence system §8, versioning strategy §9 — carried forward unchanged, not repeated here) and `docs/toolchain.md` (validated + candidate tools, Phase 1/Phase 2). Supersedes `system-design.md`§6-7 as the authoritative taxonomy/scoring reference.
