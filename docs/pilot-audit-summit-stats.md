@@ -1,5 +1,7 @@
 # Second pilot audit — Summit-Stats
 
+> [Version française](pilot-audit-summit-stats.fr.md) | English version
+
 > Manual run, 2026-08-27. Follow-up to the GeoChallenge-Tracker pilot (`docs/pilot-audit-geochallenge-tracker.md`), run at the user's request to check whether Quality Framework v1.0's mechanisms and findings hold up on a structurally different stack: Laravel/PHP + Vue/plain-JS (Summit-Stats) versus FastAPI/Python + Vue/TS (GeoChallenge-Tracker). Same rules as the first pilot: only the tools already validated in `docs/toolchain.md` were run; candidate tools flagged "not smoke-tested" stay out of scope regardless of pilot results. Raw tool outputs live in the session scratchpad, not committed; this document is the durable record.
 
 ---
