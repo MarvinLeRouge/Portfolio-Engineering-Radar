@@ -1,5 +1,7 @@
 # Phase 3 pilot audit — GeoChallenge-Tracker
 
+> [Version française](pilot-audit-geochallenge-tracker.fr.md) | English version
+
 > Manual run, 2026-08-26. The orchestration/dashboard system doesn't exist yet (that's Phase 4) — this is a hand-run pass of the **validated** tools from `docs/toolchain.md` against GeoChallenge-Tracker, scored by hand against the archetypes and model in `docs/quality-framework.md`, to calibrate the framework before it's implemented. Candidate tools flagged "not smoke-tested" in `toolchain.md` were deliberately **not** run here — they're still gaps regardless of pilot results, per `quality-framework.md`§5. Raw tool outputs live in the session scratchpad, not committed (ephemeral, reproducible on demand); this document is the durable record.
 
 ---
