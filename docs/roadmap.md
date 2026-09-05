@@ -1,6 +1,8 @@
-# Roadmap
+[🇫🇷 Version française](roadmap.fr.md) | 🇬🇧 English version
 
-> [Version française](roadmap.fr.md) | English version
+---
+
+# Roadmap
 
 Published, versioned mirror of the project's development roadmap. The
 working, non-versioned tracker (updated more frequently during active

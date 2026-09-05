@@ -1,4 +1,4 @@
-Version française | [English version](CONTRIBUTING.md)
+🇫🇷 Version française | [🇬🇧 English version](CONTRIBUTING.md)
 
 ---
 
