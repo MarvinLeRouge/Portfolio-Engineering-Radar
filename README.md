@@ -1,3 +1,7 @@
+[🇫🇷 Version française](README.fr.md) | 🇬🇧 English version
+
+---
+
 # Portfolio Engineering Radar
 
 > Evidence-based, AI-assisted quality monitoring and continuous improvement for software portfolios.

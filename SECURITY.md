@@ -1,4 +1,4 @@
-[French version](SECURITY.fr.md) | English version
+[🇫🇷 Version française](SECURITY.fr.md) | 🇬🇧 English version
 
 ---
 

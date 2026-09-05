@@ -1,6 +1,8 @@
-# Feuille de route
+🇫🇷 Version française | [🇬🇧 English version](roadmap.md)
 
-> Version française | [English version](roadmap.md)
+---
+
+# Feuille de route
 
 Miroir publié et versionné de la feuille de route de développement du
 projet. Le tracker de travail non versionné (mis à jour plus fréquemment

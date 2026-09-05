@@ -1,3 +1,7 @@
+🇫🇷 Version française | [🇬🇧 English version](README.md)
+
+---
+
 # Portfolio Engineering Radar
 
 > Suivi de la qualité d'ingénierie et amélioration continue, assistés par l'IA et fondés sur des preuves, pour un portfolio de projets logiciels.
