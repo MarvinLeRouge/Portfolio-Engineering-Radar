@@ -167,3 +167,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(docs)* Add gitignored docs/work-in-progress directory
 - *(docs)* Add changelog automation
 - *(changelog)* Homogenize changelog workflow
+- Standardize AI working notes folder to docs/work-in-progress
