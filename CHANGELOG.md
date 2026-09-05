@@ -97,6 +97,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* CiWorkflowRunner misses php artisan test and npm-script-wrapped commands
 - *(radar-audit)* VitestRunner ignores exclude_paths, double-counting nested worktree tests
 - *(radar-audit)* Classify test files by repo-relative path, not absolute path
+- Remove accidentally staged embedded git repo
 
 ### 🚜 Refactor
 
@@ -145,6 +146,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add French translation of toolchain.md
 - Add French translation of pilot-audit-geochallenge-tracker.md
 - Add French translation of pilot-audit-summit-stats.md
+- Align bilingual banners with cross-project template
 
 ### 🧪 Testing
 
