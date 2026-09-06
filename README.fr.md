@@ -134,7 +134,7 @@ Le modèle de données (`radar-core`) et le moteur d'orchestration/normalisation
 
 ## Documentation
 
-- [Conception du système](docs/architecture/) — architecture par composant (`radar-core`, `radar-audit`)
+- [Architecture](docs/architecture.fr.md) — vue d'ensemble, puis détail par composant (`radar-core`, `radar-audit`)
 - [Quality Framework](docs/quality-framework.md) — méthodologie versionnée : taxonomie, notation, modèle de confiance
 - [Toolchain](docs/toolchain.md) — outils d'analyse évalués et sélectionnés par domaine
 - [Roadmap](docs/roadmap.md) — avancement phase par phase
