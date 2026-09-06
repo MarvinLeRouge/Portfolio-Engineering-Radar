@@ -134,7 +134,7 @@ The data model (`radar-core`) and the tool orchestration/normalization engine (`
 
 ## Documentation
 
-- [System design](docs/architecture/) — architecture per component (`radar-core`, `radar-audit`)
+- [Architecture](docs/architecture.md) — overview, plus per-component detail (`radar-core`, `radar-audit`)
 - [Quality Framework](docs/quality-framework.md) — versioned methodology: taxonomy, scoring, confidence model
 - [Toolchain](docs/toolchain.md) — analysis tools evaluated and selected per domain
 - [Roadmap](docs/roadmap.md) — phase-by-phase progress
