@@ -149,6 +149,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Align bilingual banners with cross-project template
 - *(adr)* Add ADR index
 - Add architecture summary page
+- Standardize bilingual banners across remaining doc pairs
 
 ### 🧪 Testing
 
