@@ -1,6 +1,8 @@
-# radar-core
+🇫🇷 Version française | [🇬🇧 English version](README.md)
 
-> Version française | [English version](README.md)
+---
+
+# radar-core
 
 Modèle de données partagé (SQLModel) et migrations Alembic pour [Portfolio-Engineering-Radar](../README.fr.md).
 

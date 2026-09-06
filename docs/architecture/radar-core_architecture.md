@@ -1,6 +1,8 @@
-# radar-core architecture
+[🇫🇷 Version française](radar-core_architecture.fr.md) | 🇬🇧 English version
 
-> [Version française](radar-core_architecture.fr.md) | English version
+---
+
+# radar-core architecture
 
 `radar-core` is the shared data model and migration layer used by every
 other component of the system. It has no orchestration logic of its own:

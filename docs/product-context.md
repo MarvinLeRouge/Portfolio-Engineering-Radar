@@ -1,6 +1,8 @@
-# Product context
+[🇫🇷 Version française](product-context.fr.md) | 🇬🇧 English version
 
-> [Version française](product-context.fr.md) | English version
+---
+
+# Product context
 
 Minimal product-level context. For the full design rationale, see
 [`docs/system-design.md`](system-design.md); for the audit criteria

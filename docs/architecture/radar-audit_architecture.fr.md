@@ -1,6 +1,8 @@
-# Architecture de radar-audit
+🇫🇷 Version française | [🇬🇧 English version](radar-audit_architecture.md)
 
-> Version française | [English version](radar-audit_architecture.md)
+---
+
+# Architecture de radar-audit
 
 `radar-audit` orchestre l'exécution d'outils sur un dépôt et normalise
 les résultats bruts dans le modèle de données `radar-core`. Il s'invoque

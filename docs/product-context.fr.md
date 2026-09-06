@@ -1,6 +1,8 @@
-# Contexte produit
+🇫🇷 Version française | [🇬🇧 English version](product-context.md)
 
-> Version française | [English version](product-context.md)
+---
+
+# Contexte produit
 
 Contexte produit minimal. Pour le raisonnement de conception complet, voir
 [`docs/system-design.md`](system-design.md) ; pour les critères d'audit

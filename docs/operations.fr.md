@@ -1,6 +1,8 @@
-# Opérations
+🇫🇷 Version française | [🇬🇧 English version](operations.md)
 
-> Version française | [English version](operations.md)
+---
+
+# Opérations
 
 Référence opérationnelle minimale. C'est un système local, mono-utilisateur,
 offline-first : il n'y a pas encore de déploiement hébergé.

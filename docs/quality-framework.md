@@ -1,6 +1,8 @@
-# Quality Framework v1.0
+[🇫🇷 Version française](quality-framework.fr.md) | 🇬🇧 English version
 
-> [Version française](quality-framework.fr.md) | English version
+---
+
+# Quality Framework v1.0
 
 > Status: **frozen, 2026-08-26.** Reviewed point-by-point (taxonomy, scoring archetypes, weights, critical penalties, N/A/missing-data handling, per-category criteria, toolchain gaps) directly with the developer, the same review discipline applied to `open-decisions.md` for Phase 0. This is the reference methodology for Phase 3 (pilot calibration) and beyond, per the versioning rules in §6.
 >

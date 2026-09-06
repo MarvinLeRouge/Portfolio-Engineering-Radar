@@ -1,6 +1,8 @@
-# Toolchain — Phase 1
+[🇫🇷 Version française](toolchain.fr.md) | 🇬🇧 English version
 
-> [Version française](toolchain.fr.md) | English version
+---
+
+# Toolchain — Phase 1
 
 > Status: in progress. Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
 > Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see [`docs/adr/0004-toolchain-installation-strategy.md`](adr/0004-toolchain-installation-strategy.md).
