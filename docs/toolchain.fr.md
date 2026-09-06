@@ -1,6 +1,8 @@
-# Chaîne d'outils — Phase 1
+🇫🇷 Version française | [🇬🇧 English version](toolchain.md)
 
-> Version française | [English version](toolchain.md)
+---
+
+# Chaîne d'outils — Phase 1
 
 > Statut : en cours. Chaque domaine est smoke-testé (installation éphémère, exécution rapide contre un dépôt du périmètre, vérification de licence) et validé avant de passer au suivant, selon le prompt maître §9-10.
 > Stratégie d'installation : éphémère uniquement (`uvx`, `npx`/`pnpm dlx`, sous-commandes natives `npm`/`pnpm`/`composer`, ou Docker pour les binaires Go seuls sans wrapper de gestionnaire de paquets), voir [`docs/adr/0004-toolchain-installation-strategy.md`](adr/0004-toolchain-installation-strategy.md).

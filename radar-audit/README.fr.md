@@ -1,6 +1,8 @@
-# radar-audit
+🇫🇷 Version française | [🇬🇧 English version](README.md)
 
-> Version française | [English version](README.md)
+---
+
+# radar-audit
 
 Moteur d'orchestration d'outils et de normalisation pour [Portfolio-Engineering-Radar](../README.fr.md).
 

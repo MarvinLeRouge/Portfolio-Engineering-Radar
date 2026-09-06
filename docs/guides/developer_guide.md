@@ -1,6 +1,8 @@
-# Developer guide
+[🇫🇷 Version française](developer_guide.fr.md) | 🇬🇧 English version
 
-> [Version française](developer_guide.fr.md) | English version
+---
+
+# Developer guide
 
 Practical guide for working on the `radar-core` / `radar-audit` codebase.
 For the contribution workflow (branches, commits, pull requests), see

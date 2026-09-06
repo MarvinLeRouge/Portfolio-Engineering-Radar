@@ -1,6 +1,8 @@
-# radar-audit
+[🇫🇷 Version française](README.fr.md) | 🇬🇧 English version
 
-> [Version française](README.fr.md) | English version
+---
+
+# radar-audit
 
 Tool orchestration and normalization engine for [Portfolio-Engineering-Radar](../README.md).
 

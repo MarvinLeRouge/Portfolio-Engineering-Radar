@@ -1,6 +1,8 @@
-# radar-audit architecture
+[🇫🇷 Version française](radar-audit_architecture.fr.md) | 🇬🇧 English version
 
-> [Version française](radar-audit_architecture.fr.md) | English version
+---
+
+# radar-audit architecture
 
 `radar-audit` orchestrates tool execution against a repository and
 normalizes the raw results into the `radar-core` data model. It is

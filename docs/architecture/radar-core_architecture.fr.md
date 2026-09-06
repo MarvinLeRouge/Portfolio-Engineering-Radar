@@ -1,6 +1,8 @@
-# Architecture de radar-core
+🇫🇷 Version française | [🇬🇧 English version](radar-core_architecture.md)
 
-> Version française | [English version](radar-core_architecture.md)
+---
+
+# Architecture de radar-core
 
 `radar-core` est le modèle de données partagé et la couche de migration
 utilisés par tous les autres composants du système. Il ne contient

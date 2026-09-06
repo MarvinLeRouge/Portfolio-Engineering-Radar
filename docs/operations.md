@@ -1,6 +1,8 @@
-# Operations
+[🇫🇷 Version française](operations.fr.md) | 🇬🇧 English version
 
-> [Version française](operations.fr.md) | English version
+---
+
+# Operations
 
 Minimal operations reference. This is a local, single-user, offline-first
 system: there is no hosted deployment yet.
