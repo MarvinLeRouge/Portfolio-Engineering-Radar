@@ -150,6 +150,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(adr)* Add ADR index
 - Add architecture summary page
 - Standardize bilingual banners across remaining doc pairs
+- Document the local post-commit changelog hook
 
 ### 🧪 Testing
 
