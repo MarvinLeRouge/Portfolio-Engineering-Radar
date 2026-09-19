@@ -32,7 +32,8 @@ vous (par exemple avant d'exécuter une migration destructrice).
 
 ## CI / automatisation
 
-- `CHANGELOG.md` est régénéré automatiquement à chaque push sur `main` via [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml) (ouvre une pull request, ne pousse jamais directement sur `main`)
+- `CHANGELOG.md` est régénéré principalement par un hook local `post-commit` intégré au framework `pre-commit` (`scripts/changelog-post-commit.sh`, exécute git-cliff et intègre le résultat dans le même commit), si bien que les PR de fonctionnalité contiennent déjà leur propre entrée de changelog
+- En secours, [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml) régénère toujours `CHANGELOG.md` à chaque push sur `main` et ouvre une pull request (ne pousse jamais directement sur `main`), au cas où un commit atterrirait sans passer par le hook local
 - Il n'y a pas encore de pipeline CI exécutant les tests ou les gates `ruff`/`mypy` à distance ; ils s'exécutent localement via des hooks pre-commit (voir [`CONTRIBUTING.md`](../CONTRIBUTING.fr.md)). Suivi dans [`docs/roadmap.md`](roadmap.fr.md)
 
 ## Secrets
