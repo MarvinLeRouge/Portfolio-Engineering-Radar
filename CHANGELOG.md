@@ -152,6 +152,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Standardize bilingual banners across remaining doc pairs
 - Document the local post-commit changelog hook
 - Add design spec for category-level scoring and report pipeline (scope A)
+- Add implementation plan for category-level scoring and report pipeline (scope A)
 
 ### 🧪 Testing
 
