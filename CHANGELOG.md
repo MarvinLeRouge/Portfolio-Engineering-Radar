@@ -76,6 +76,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add shared docker invocation helper
 - *(radar-audit)* Add PipAuditRunner for criterion 4.1
 - *(radar-audit)* Add PnpmAuditRunner for criterion 4.1
+- *(radar-audit)* Add ComposerAuditRunner for criterion 4.1
 
 ### 🐛 Bug Fixes
 
