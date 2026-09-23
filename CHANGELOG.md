@@ -158,6 +158,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Document the local post-commit changelog hook
 - Add design spec for category-level scoring and report pipeline (scope A)
 - Add implementation plan for category-level scoring and report pipeline (scope A)
+- *(radar-audit)* Mark scoring and report pipeline plan complete
 
 ### 🧪 Testing
 

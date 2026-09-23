@@ -33,7 +33,7 @@
 - Consumes: the 12 existing normalizer functions (`normalize_dependency_circularity`, `normalize_design_doc`, `normalize_module_size`, `normalize_lint_pass_rate`, `normalize_type_check_pass_rate`, `normalize_cyclomatic_complexity`, `normalize_precommit_gate`, `normalize_code_duplication`, `normalize_unit_test_pass_rate`, `normalize_integration_tests`, `normalize_e2e_tests`, `normalize_ci_test_execution`), all already implemented under `radar_audit.normalizers.*`. `get_criterion`/`seed_taxonomy` (existing, `normalizers/shared.py` and `taxonomy/seed.py`).
 - Produces: `CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn]` and `NormalizerFn` type alias, both importable from `radar_audit.normalizers`. Task 2's `scoring.py` consumes both by name.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # radar-audit/tests/test_normalizer_registry.py
@@ -64,12 +64,12 @@ def test_every_registry_value_is_callable():
         assert callable(normalizer)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_normalizer_registry.py -v`
 Expected: FAIL with `ImportError: cannot import name 'CRITERION_NORMALIZERS' from 'radar_audit.normalizers'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # radar-audit/src/radar_audit/normalizers/__init__.py
@@ -113,12 +113,12 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_normalizer_registry.py -v`
 Expected: PASS (4 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add radar-audit/src/radar_audit/normalizers/__init__.py radar-audit/tests/test_normalizer_registry.py
@@ -137,7 +137,7 @@ git commit -m "feat(radar-audit): add criterion-to-normalizer registry for categ
 - Consumes: `CRITERION_NORMALIZERS` (Task 1). `get_criterion`, `get_or_create_scoring_run` (`radar_audit.normalizers.shared`, existing). `seed_taxonomy` (`radar_audit.taxonomy.seed`, existing). `Repository` (`radar_core.models.repository`), `Audit`, `ToolResult` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel`, `Confidence` (`radar_core.enums`) — all existing.
 - Produces: `score_repository(session: Session, repo_name: str) -> ScoringRun`, `RepositoryNotFoundError(ValueError)`, `NoAuditFoundError(ValueError)`, `get_repository_by_name(session: Session, repo_name: str) -> Repository`. Task 3 (`report.py`) and Task 4 (CLI) consume all four names from `radar_audit.scoring`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # radar-audit/tests/test_scoring.py
@@ -269,12 +269,12 @@ def test_category_score_redistributes_weight_over_scored_criteria_only(db_sessio
     assert arch_category_score.value == pytest.approx(expected)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_scoring.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.scoring'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # radar-audit/src/radar_audit/scoring.py
@@ -379,12 +379,12 @@ def _write_category_score(
     return category_score
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_scoring.py -v`
 Expected: PASS (5 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add radar-audit/src/radar_audit/scoring.py radar-audit/tests/test_scoring.py
@@ -403,7 +403,7 @@ git commit -m "feat(radar-audit): add score_repository with category-level weigh
 - Consumes: `get_repository_by_name`, `RepositoryNotFoundError` (Task 2, `radar_audit.scoring`). `Audit` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel` (`radar_core.enums`) — all existing.
 - Produces: `render_report(session: Session, repo_name: str) -> str`, `write_report(markdown: str, repo_name: str, output_dir: Path) -> Path`, `NoScoringRunFoundError(ValueError)`. Task 5 (CLI) consumes all three from `radar_audit.report`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # radar-audit/tests/test_report.py
@@ -470,12 +470,12 @@ def test_write_report_creates_file_under_repo_named_subdir(db_session, tmp_path)
     assert written_path.read_text() == markdown
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_report.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.report'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # radar-audit/src/radar_audit/report.py
@@ -571,12 +571,12 @@ def write_report(markdown: str, repo_name: str, output_dir: Path) -> Path:
     return target_path
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_report.py -v`
 Expected: PASS (4 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add radar-audit/src/radar_audit/report.py radar-audit/tests/test_report.py
@@ -595,7 +595,7 @@ git commit -m "feat(radar-audit): add render_report/write_report for per-repo Ma
 - Consumes: `score_repository`, `RepositoryNotFoundError`, `NoAuditFoundError` (Task 2, `radar_audit.scoring`).
 - Produces: `radar-audit score <repo>` Typer command, exit code 0 on success, 1 with a clean `Error: ...` line (no traceback) on `RepositoryNotFoundError`/`NoAuditFoundError`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # radar-audit/tests/test_cli_score_report.py
@@ -662,12 +662,12 @@ def test_score_command_persists_scores_for_an_audited_repo(tmp_path, monkeypatch
         assert any(s.level == ScoreLevel.CRITERION for s in scores)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli_score_report.py -v`
 Expected: FAIL with `typer.testing` reporting `No such command 'score'` / non-zero unexpected exit code
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Edit `radar-audit/src/radar_audit/cli.py`:
 
@@ -707,12 +707,12 @@ def score(
         raise typer.Exit(1) from exc
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli_score_report.py -v`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add radar-audit/src/radar_audit/cli.py radar-audit/tests/test_cli_score_report.py
@@ -732,7 +732,7 @@ git commit -m "feat(radar-audit): add 'radar-audit score' CLI command"
 - Consumes: `render_report`, `write_report`, `NoScoringRunFoundError` (Task 3, `radar_audit.report`).
 - Produces: `radar-audit report <repo> [--output-dir PATH]` Typer command, writes `<output_dir>/<repo>/latest.md`, prints the written path, exit code 0 on success, 1 with a clean error on `RepositoryNotFoundError`/`NoScoringRunFoundError`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `radar-audit/tests/test_cli_score_report.py`:
 
@@ -780,12 +780,12 @@ def test_report_command_writes_markdown_to_output_dir(tmp_path, monkeypatch):
     assert "# Report: sample-repo" in written.read_text()
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli_score_report.py -v`
 Expected: FAIL — `No such command 'report'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Edit `radar-audit/src/radar_audit/cli.py`:
 
@@ -842,12 +842,12 @@ Edit `.gitignore` (repo root), adding alongside the existing `*.db` entry:
 radar-audit/reports/
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli_score_report.py -v`
 Expected: PASS (4 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add radar-audit/src/radar_audit/cli.py radar-audit/tests/test_cli_score_report.py .gitignore
@@ -860,17 +860,17 @@ git commit -m "feat(radar-audit): add 'radar-audit report' CLI command, gitignor
 
 **Files:** none created — validation only, per this project's established discipline of confirming plausibility against a real portfolio repo before an increment is considered done.
 
-- [ ] **Step 1: Run the full radar-audit test suite**
+- [x] **Step 1: Run the full radar-audit test suite**
 
 Run: `cd radar-audit && uv run pytest -v`
 Expected: PASS, no regressions in any pre-existing test file.
 
-- [ ] **Step 2: Run lint and type checks**
+- [x] **Step 2: Run lint and type checks**
 
 Run: `cd radar-audit && uv run ruff check . && uv run ruff format --check . && uv run mypy src`
 Expected: no findings.
 
-- [ ] **Step 3: Real-repo end-to-end validation**
+- [x] **Step 3: Real-repo end-to-end validation**
 
 Run against an actual portfolio repo (Python+Vue: GeoChallenge-Tracker), using a throwaway database:
 
@@ -886,7 +886,7 @@ unset RADAR_DATABASE_URL
 
 Inspect the printed report: categories 1-3 must show plausible, non-`None` numeric scores (0-10 range) with per-criterion detail; 1.4 and 3.5 must render as "not scored this run"; categories 4-15 must all render as "Not yet audited". Report any implausible score before considering the task done (e.g. a category score outside 0-10, a crash on a real repo's tool output shape that no synthetic fixture exercised).
 
-- [ ] **Step 4: Update the plan file to mark every task complete, commit**
+- [x] **Step 4: Update the plan file to mark every task complete, commit**
 
 ```bash
 git add docs/superpowers/plans/2026-09-22-scoring-and-report-pipeline.md
