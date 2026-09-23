@@ -63,7 +63,8 @@ advances.
     - [x] Category 1 — Architecture & design: dependency-cruiser + pydeps, DESIGN.md/ARCHITECTURE.md/ADR presence, radon + static LOC module size
     - [x] Category 2 — Code quality: lint pass rate, type-check pass rate, cyclomatic complexity, pre-commit gate, code duplication
     - [x] Category 3 — Testing & reliability: unit test pass rate, integration tests, CI test execution, E2E test presence
-    - [ ] Categories 4-15 (Security, Maintainability, Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
+    - [x] Category 4 — Security: dependency vulnerabilities (pip-audit/pnpm audit/Composer audit), secrets in git history (Gitleaks), SAST findings (Semgrep), container image vulnerabilities (Trivy), Dockerfile hardening (Hadolint)
+    - [ ] Categories 5-15 (Maintainability, Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
 - [ ] Implement the local dashboard (backend + frontend)
 - [ ] Implement report generation (global + per-repository)
 
