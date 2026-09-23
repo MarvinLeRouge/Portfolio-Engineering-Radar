@@ -9,6 +9,7 @@ from radar_audit.scoring import (
     score_repository,
 )
 from radar_core.enums import ScoreLevel
+from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score
 from sqlmodel import select
@@ -81,6 +82,41 @@ def test_score_repository_is_idempotent_no_duplicate_scores(db_session, tmp_path
 
     assert first_run.id == second_run.id
     assert first_count == second_count
+
+
+def test_score_repository_is_idempotent_no_duplicate_findings(db_session, tmp_path):
+    # No DESIGN.md, so the design-doc-presence normalizer creates a Finding ("no
+    # architectural documentation found") on every call to score_repository. Without
+    # deleting the previous pass's Finding rows first, a second call would duplicate
+    # every Finding, same failure mode as the Score duplication this idempotency test
+    # sits next to.
+    _audited_repo(db_session, tmp_path)
+
+    first_run = score_repository(db_session, "repo")
+    first_finding_count = len(
+        db_session.exec(select(Finding).where(Finding.scoring_run_id == first_run.id)).all()
+    )
+    assert first_finding_count >= 1
+
+    second_run = score_repository(db_session, "repo")
+    second_finding_count = len(
+        db_session.exec(select(Finding).where(Finding.scoring_run_id == second_run.id)).all()
+    )
+
+    assert first_run.id == second_run.id
+    assert first_finding_count == second_finding_count
+
+
+def test_score_repository_refreshes_scored_at_when_reusing_scoring_run(db_session, tmp_path):
+    _audited_repo(db_session, tmp_path)
+
+    first_run = score_repository(db_session, "repo")
+    first_scored_at = first_run.scored_at
+
+    second_run = score_repository(db_session, "repo")
+
+    assert first_run.id == second_run.id
+    assert second_run.scored_at >= first_scored_at
 
 
 def test_category_score_redistributes_weight_over_scored_criteria_only(db_session, tmp_path):

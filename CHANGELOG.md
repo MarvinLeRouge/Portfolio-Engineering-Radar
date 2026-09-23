@@ -103,6 +103,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* VitestRunner ignores exclude_paths, double-counting nested worktree tests
 - *(radar-audit)* Classify test files by repo-relative path, not absolute path
 - Remove accidentally staged embedded git repo
+- *(radar-audit)* Delete cascaded Finding rows before ToolResult/ScoringRun reuse
 
 ### 🚜 Refactor
 

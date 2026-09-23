@@ -877,6 +877,7 @@ Run against an actual portfolio repo (Python+Vue: GeoChallenge-Tracker), using a
 ```bash
 cd radar-audit
 export RADAR_DATABASE_URL="sqlite:///$(mktemp -u /tmp/radar_scoring_validation_XXXX.db)"
+(cd ../radar-core && uv run alembic upgrade head)
 uv run radar-audit run GeoChallenge-Tracker
 uv run radar-audit score GeoChallenge-Tracker
 uv run radar-audit report GeoChallenge-Tracker --output-dir /tmp/radar_reports_validation

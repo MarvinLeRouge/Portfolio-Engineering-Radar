@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from radar_core.enums import Confidence, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
+from radar_core.models.finding import Finding
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
@@ -55,6 +58,15 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     ).all()
     for existing in existing_scores:
         session.delete(existing)
+
+    existing_findings = session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    for existing_finding in existing_findings:
+        session.delete(existing_finding)
+
+    scoring_run.scored_at = datetime.now(UTC)
+    session.add(scoring_run)
     session.commit()
 
     tool_results = list(session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)))

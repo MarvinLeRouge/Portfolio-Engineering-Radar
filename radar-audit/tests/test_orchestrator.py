@@ -1,5 +1,6 @@
 import subprocess
 
+from radar_audit.cli import DEFAULT_RUNNERS
 from radar_audit.config import PortfolioConfig
 from radar_audit.orchestrator import (
     AuditPlan,
@@ -11,7 +12,9 @@ from radar_audit.orchestrator import (
     resolve_repository,
 )
 from radar_audit.runner import RawToolOutput
+from radar_audit.scoring import score_repository
 from radar_core.models.audit import ToolResult
+from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -293,6 +296,42 @@ def test_execute_audit_skips_runner_for_unsupported_stack(db_session, tmp_path):
 
     results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
     assert results == []
+
+
+def test_execute_audit_after_score_does_not_raise_fk_integrity_error_on_rerun(db_session, tmp_path):
+    # Regression test for the run -> score -> run sequence: scoring creates Finding
+    # rows referencing the first run's ToolResult rows (e.g. the design-doc-presence
+    # normalizer's "no architectural documentation found" finding, since this repo has
+    # no DESIGN.md). Re-running the audit must delete those Finding rows before
+    # deleting the stale ToolResult rows they reference, or the FK raises IntegrityError.
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    first_audit = execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+    first_result_ids = {
+        r.id
+        for r in db_session.exec(
+            select(ToolResult).where(ToolResult.audit_id == first_audit.id)
+        ).all()
+    }
+
+    scoring_run = score_repository(db_session, "repo")
+    findings_after_score = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings_after_score) >= 1
+    assert any(f.tool_result_id is not None for f in findings_after_score)
+
+    second_audit = execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+
+    assert first_audit.id == second_audit.id
+    remaining_results = db_session.exec(
+        select(ToolResult).where(ToolResult.audit_id == second_audit.id)
+    ).all()
+    remaining_result_ids = {r.id for r in remaining_results}
+    assert len(remaining_result_ids) > 0
+    assert remaining_result_ids.isdisjoint(first_result_ids)
 
 
 def test_execute_audit_runs_multi_stack_runner_once_per_colocated_stacks(db_session, tmp_path):
