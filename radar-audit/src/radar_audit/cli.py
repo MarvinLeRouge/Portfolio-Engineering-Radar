@@ -9,6 +9,7 @@ from radar_core.db import get_engine, get_session
 
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
+from radar_audit.report import NoScoringRunFoundError, render_report, write_report
 from radar_audit.runner import ToolRunner
 from radar_audit.runners.ci_workflow_runner import CiWorkflowRunner
 from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
@@ -37,6 +38,7 @@ from radar_audit.scoring import NoAuditFoundError, RepositoryNotFoundError, scor
 app = typer.Typer()
 
 DEFAULT_PORTFOLIO_YAML = Path(__file__).resolve().parents[2] / "portfolio.yaml"
+DEFAULT_REPORTS_DIR = Path(__file__).resolve().parents[2] / "reports"
 DEFAULT_RUNNERS: list[ToolRunner] = [
     DependencyCruiserRunner(),
     PydepsRunner(),
@@ -84,6 +86,7 @@ _EXPECTED_ERRORS = (
     CalledProcessError,
     RepositoryNotFoundError,
     NoAuditFoundError,
+    NoScoringRunFoundError,
 )
 
 
@@ -151,6 +154,28 @@ def score(
         session = get_session(engine)
         try:
             score_repository(session, repo_name)
+        finally:
+            session.close()
+            engine.dispose()
+    except _EXPECTED_ERRORS as exc:
+        typer.secho(f"Error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(1) from exc
+
+
+@app.command()
+def report(
+    repo_name: str = typer.Argument(..., help="Repository name (must already have a score)"),
+    output_dir: Path = typer.Option(  # noqa: B008
+        DEFAULT_REPORTS_DIR, "--output-dir", help="Directory to write the report into"
+    ),
+) -> None:
+    try:
+        engine = get_engine(_database_url())
+        session = get_session(engine)
+        try:
+            markdown = render_report(session, repo_name)
+            written_path = write_report(markdown, repo_name, output_dir)
+            typer.echo(f"Report written to {written_path}")
         finally:
             session.close()
             engine.dispose()

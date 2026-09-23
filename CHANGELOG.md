@@ -72,6 +72,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add score_repository with category-level weighted aggregation
 - *(radar-audit)* Add render_report/write_report for per-repo Markdown output
 - *(radar-audit)* Add 'radar-audit score' CLI command
+- *(radar-audit)* Add 'radar-audit report' CLI command, gitignore generated reports
 
 ### 🐛 Bug Fixes
 
