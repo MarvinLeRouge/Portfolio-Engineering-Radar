@@ -80,6 +80,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalizer for criterion 4.1
 - *(radar-audit)* Add GitleaksRunner for criterion 4.2
 - *(radar-audit)* Add normalizer for criterion 4.2
+- *(radar-audit)* Add SemgrepRunner for criterion 4.3
 
 ### 🐛 Bug Fixes
 
