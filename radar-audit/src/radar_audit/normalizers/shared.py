@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from radar_core.models.audit import Audit
+from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.scoring import ScoringRun
 from sqlmodel import Session, select
@@ -58,3 +58,25 @@ def get_criterion(
             f"for methodology_version_id={methodology_version_id}"
         )
     return criterion
+
+
+# exit_code the orchestrator assigns to its crash-isolation record (see
+# orchestrator._run_tool_safely).
+CRASHED_EXIT_CODE = -1
+
+
+def has_success_payload(tool_result: ToolResult, payload_key: str) -> bool:
+    """Tell whether a ToolResult carries a real, successfully parsed payload.
+
+    Security runners whose exit code is non-zero on findings (pip-audit, pnpm,
+    composer) cannot be filtered on exit code alone, so success is signalled by the
+    presence of the parsed payload list under `payload_key`. A failed run (orchestrator
+    crash record, unparsable tool output, tool-reported error) omits that key or sets
+    an `error` key, and must be treated as missing data rather than as a clean result.
+    """
+    if tool_result.exit_code == CRASHED_EXIT_CODE:
+        return False
+    raw_output = tool_result.raw_output
+    if not isinstance(raw_output, dict) or "error" in raw_output:
+        return False
+    return isinstance(raw_output.get(payload_key), list)

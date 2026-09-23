@@ -3,8 +3,8 @@ from radar_audit.normalizers.shared import get_criterion
 from radar_audit.taxonomy.seed import seed_taxonomy
 
 
-def test_registry_has_exactly_the_twelve_tooled_criteria():
-    assert len(CRITERION_NORMALIZERS) == 12
+def test_registry_has_exactly_the_seventeen_tooled_criteria():
+    assert len(CRITERION_NORMALIZERS) == 17
 
 
 def test_registry_excludes_the_two_deferred_llm_judgment_criteria():

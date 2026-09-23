@@ -73,6 +73,20 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add render_report/write_report for per-repo Markdown output
 - *(radar-audit)* Add 'radar-audit score' CLI command
 - *(radar-audit)* Add 'radar-audit report' CLI command, gitignore generated reports
+- *(radar-audit)* Add shared docker invocation helper
+- *(radar-audit)* Add PipAuditRunner for criterion 4.1
+- *(radar-audit)* Add PnpmAuditRunner for criterion 4.1
+- *(radar-audit)* Add ComposerAuditRunner for criterion 4.1
+- *(radar-audit)* Add normalizer for criterion 4.1
+- *(radar-audit)* Add GitleaksRunner for criterion 4.2
+- *(radar-audit)* Add normalizer for criterion 4.2
+- *(radar-audit)* Add SemgrepRunner for criterion 4.3
+- *(radar-audit)* Add normalizer for criterion 4.3
+- *(radar-audit)* Add TrivyImageRunner for criterion 4.4
+- *(radar-audit)* Add normalizer for criterion 4.4
+- *(radar-audit)* Add HadolintRunner for criterion 4.5
+- *(radar-audit)* Add normalizer for criterion 4.5
+- *(radar-audit)* Register category 4 runners and normalizers
 
 ### 🐛 Bug Fixes
 
@@ -104,6 +118,9 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Classify test files by repo-relative path, not absolute path
 - Remove accidentally staged embedded git repo
 - *(radar-audit)* Delete cascaded Finding rows before ToolResult/ScoringRun reuse
+- *(radar-audit)* Mark severity bands provisional in criterion 4.2 normalizer
+- *(radar-audit)* Stop scoring failed security tool runs as clean
+- *(radar-audit)* Stop scoring gitleaks as clean when git history is unreadable
 
 ### 🚜 Refactor
 
@@ -161,6 +178,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add implementation plan for category-level scoring and report pipeline (scope A)
 - *(radar-audit)* Mark scoring and report pipeline plan complete
 - *(radar-audit)* Add category 4 security design spec
+- Write radar-audit category 4 (security) implementation plan
 
 ### 🧪 Testing
 

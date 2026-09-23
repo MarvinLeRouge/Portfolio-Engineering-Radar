@@ -107,12 +107,17 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         results = session.exec(select(ToolResult)).all()
         # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped,
         # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner,
-        # IntegrationTestRunner, CiWorkflowRunner) run; every subproject-scoped
-        # runner skips an "unknown" stack.
+        # IntegrationTestRunner, CiWorkflowRunner, GitleaksRunner, SemgrepRunner,
+        # TrivyImageRunner, HadolintRunner) run; every subproject-scoped runner
+        # (PipAuditRunner, PnpmAuditRunner, ComposerAuditRunner) skips an "unknown" stack.
         assert {r.tool_name for r in results} == {
             "design-doc-presence",
             "pre-commit-gate",
             "jscpd",
             "integration-test-heuristic",
             "ci-workflow",
+            "gitleaks",
+            "semgrep",
+            "trivy-image",
+            "hadolint",
         }

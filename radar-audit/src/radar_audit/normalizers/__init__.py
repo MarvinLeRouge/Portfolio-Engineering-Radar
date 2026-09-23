@@ -9,14 +9,23 @@ from sqlmodel import Session
 
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
+from radar_audit.normalizers.container_image_vulnerabilities import (
+    normalize_container_image_vulnerabilities,
+)
 from radar_audit.normalizers.cyclomatic_complexity import normalize_cyclomatic_complexity
 from radar_audit.normalizers.dependency_circularity import normalize_dependency_circularity
+from radar_audit.normalizers.dependency_vulnerabilities import (
+    normalize_dependency_vulnerabilities,
+)
 from radar_audit.normalizers.design_doc import normalize_design_doc
+from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
 from radar_audit.normalizers.e2e_tests import normalize_e2e_tests
 from radar_audit.normalizers.integration_tests import normalize_integration_tests
 from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
 from radar_audit.normalizers.module_size import normalize_module_size
 from radar_audit.normalizers.precommit_gate import normalize_precommit_gate
+from radar_audit.normalizers.sast_findings import normalize_sast_findings
+from radar_audit.normalizers.secrets_in_history import normalize_secrets_in_history
 from radar_audit.normalizers.type_check_pass_rate import normalize_type_check_pass_rate
 from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass_rate
 
@@ -41,4 +50,9 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Testing & reliability", "Integration tests"): normalize_integration_tests,
     ("Testing & reliability", "E2E tests"): normalize_e2e_tests,
     ("Testing & reliability", "CI executes the test suite"): normalize_ci_test_execution,
+    ("Security", "Dependency vulnerabilities (CVE)"): normalize_dependency_vulnerabilities,
+    ("Security", "Secrets in tracked history"): normalize_secrets_in_history,
+    ("Security", "SAST findings"): normalize_sast_findings,
+    ("Security", "Container image vulnerabilities"): normalize_container_image_vulnerabilities,
+    ("Security", "Dockerfile hardening"): normalize_dockerfile_hardening,
 }
