@@ -85,6 +85,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add TrivyImageRunner for criterion 4.4
 - *(radar-audit)* Add normalizer for criterion 4.4
 - *(radar-audit)* Add HadolintRunner for criterion 4.5
+- *(radar-audit)* Add normalizer for criterion 4.5
 
 ### 🐛 Bug Fixes
 
