@@ -26,7 +26,7 @@ def _make_scoring_run_and_criterion(db_session):
     return audit, scoring_run, criterion
 
 
-def _make_tool_result(db_session, audit, raw_output):
+def _make_tool_result(db_session, audit, raw_output, exit_code=0):
     tool_result = ToolResult(
         audit_id=audit.id,
         subproject_path=".",
@@ -34,7 +34,7 @@ def _make_tool_result(db_session, audit, raw_output):
         tool_version="1.0.0",
         command="stub",
         raw_output=raw_output,
-        exit_code=0,
+        exit_code=exit_code,
         duration_ms=1,
     )
     db_session.add(tool_result)
@@ -161,3 +161,77 @@ def test_one_unfiltered_hit_wins_over_several_pre_filtered_ones(db_session):
     score = normalize_secrets_in_history(db_session, scoring_run, criterion, [tool_result])
 
     assert score.value == 2.0
+
+
+def test_orchestrator_crash_record_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session, audit, {"error": "Command 'docker' timed out after 120 seconds"}, exit_code=-1
+    )
+
+    score = normalize_secrets_in_history(db_session, scoring_run, criterion, [crashed])
+
+    assert score is None
+
+
+def test_missing_report_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    failed = _make_tool_result(
+        db_session,
+        audit,
+        {"error": "gitleaks produced no readable report", "stdout": "", "stderr": "boom"},
+        exit_code=125,
+    )
+
+    score = normalize_secrets_in_history(db_session, scoring_run, criterion, [failed])
+
+    assert score is None
+
+
+def test_crash_record_is_excluded_when_a_successful_scan_exists(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session, audit, {"error": "Command 'docker' timed out after 120 seconds"}, exit_code=-1
+    )
+    succeeded = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "findings": [
+                {
+                    "rule": "github-pat",
+                    "file": "config.py",
+                    "line": 1,
+                    "match": 'API_KEY = "REDACTED"',
+                    "commit": "abc",
+                }
+            ]
+        },
+    )
+
+    score = normalize_secrets_in_history(db_session, scoring_run, criterion, [crashed, succeeded])
+
+    assert score.value == 2.0
+
+
+def test_redacted_match_on_a_fake_variable_is_still_pre_filtered(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "findings": [
+                {
+                    "rule": "generic-api-key",
+                    "file": "tests/test_auth.py",
+                    "line": 3,
+                    "match": 'fake_token = "REDACTED"',
+                    "commit": "abc123",
+                }
+            ]
+        },
+    )
+
+    score = normalize_secrets_in_history(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 8.0

@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import has_success_payload
+
 _RELEVANT_TOOLS = {"pip-audit", "pnpm-audit", "composer-audit"}
 _SEVERITY_ENUM = {
     "CRITICAL": FindingSeverity.CRITICAL,
@@ -29,14 +31,18 @@ def normalize_dependency_vulnerabilities(
     relevant = [
         r
         for r in tool_results
-        if r.tool_name in _RELEVANT_TOOLS and r.raw_output.get("manifest_found") is True
+        if r.tool_name in _RELEVANT_TOOLS
+        and r.raw_output.get("manifest_found") is True
+        # A failed audit (crash record, unparsable output, tool-reported error) is
+        # missing data, never a clean "no vulnerabilities" result.
+        and has_success_payload(r, "vulnerabilities")
     ]
     if not relevant:
         return None
 
     worst = "NONE"
     for tool_result in relevant:
-        for vuln in tool_result.raw_output.get("vulnerabilities", []):
+        for vuln in tool_result.raw_output["vulnerabilities"]:
             severity = vuln.get("severity", "MEDIUM")
             session.add(
                 Finding(

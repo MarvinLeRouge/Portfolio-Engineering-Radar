@@ -23,7 +23,7 @@ def _make_scoring_run_and_criterion(db_session):
     return audit, scoring_run, criterion
 
 
-def _make_tool_result(db_session, audit, raw_output):
+def _make_tool_result(db_session, audit, raw_output, exit_code=0):
     tool_result = ToolResult(
         audit_id=audit.id,
         subproject_path=".",
@@ -31,7 +31,7 @@ def _make_tool_result(db_session, audit, raw_output):
         tool_version="1.0.0",
         command="stub",
         raw_output=raw_output,
-        exit_code=0,
+        exit_code=exit_code,
         duration_ms=1,
     )
     db_session.add(tool_result)
@@ -144,3 +144,58 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_sast_findings(db_session, scoring_run, criterion, [unrelated])
 
     assert score is None
+
+
+def test_orchestrator_crash_record_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session, audit, {"error": "Command 'docker' timed out after 120 seconds"}, exit_code=-1
+    )
+
+    score = normalize_sast_findings(db_session, scoring_run, criterion, [crashed])
+
+    assert score is None
+
+
+def test_failed_scan_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    failed = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "error": "semgrep scan failed",
+            "errors": [{"code": 2, "level": "error", "message": "HTTP 404"}],
+            "stdout": "",
+            "stderr": "",
+        },
+        exit_code=7,
+    )
+
+    score = normalize_sast_findings(db_session, scoring_run, criterion, [failed])
+
+    assert score is None
+
+
+def test_crash_record_is_excluded_when_a_successful_scan_exists(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session, audit, {"error": "Command 'docker' timed out after 120 seconds"}, exit_code=-1
+    )
+    succeeded = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "results": [
+                {
+                    "check_id": "python.lang.security.audit.eval",
+                    "path": "src/a.py",
+                    "start": {"line": 1},
+                    "extra": {"severity": "WARNING", "message": "eval detected"},
+                }
+            ]
+        },
+    )
+
+    score = normalize_sast_findings(db_session, scoring_run, criterion, [crashed, succeeded])
+
+    assert score.value == 6.0

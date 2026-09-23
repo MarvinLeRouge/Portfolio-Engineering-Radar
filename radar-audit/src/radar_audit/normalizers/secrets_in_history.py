@@ -10,6 +10,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import has_success_payload
+
 # Pre-filter rules per quality-framework.md§3.2 (Phase 3 pilot calibration): a
 # generic-api-key hit in a tests?/ path on a fake_*/mock_*/dummy_* variable, or a
 # hit whose file matches .env.*.example/.template/.sample, is a probable false
@@ -33,14 +35,18 @@ def normalize_secrets_in_history(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
-    relevant = [r for r in tool_results if r.tool_name == "gitleaks"]
+    # A failed gitleaks run (crash record, Docker unreachable, missing report) is
+    # missing data, never a clean "no secrets" result.
+    relevant = [
+        r for r in tool_results if r.tool_name == "gitleaks" and has_success_payload(r, "findings")
+    ]
     if not relevant:
         return None
 
     any_confirmed = False
     any_pre_filtered = False
     for tool_result in relevant:
-        for finding in tool_result.raw_output.get("findings", []):
+        for finding in tool_result.raw_output["findings"]:
             pre_filtered = _is_pre_filtered(finding)
             if pre_filtered:
                 any_pre_filtered = True

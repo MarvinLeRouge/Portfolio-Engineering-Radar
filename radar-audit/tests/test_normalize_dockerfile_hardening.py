@@ -25,7 +25,7 @@ def _make_scoring_run_and_criterion(db_session):
     return audit, scoring_run, criterion
 
 
-def _make_tool_result(db_session, audit, raw_output):
+def _make_tool_result(db_session, audit, raw_output, exit_code=0):
     tool_result = ToolResult(
         audit_id=audit.id,
         subproject_path=".",
@@ -33,7 +33,7 @@ def _make_tool_result(db_session, audit, raw_output):
         tool_version="1.0.0",
         command="stub",
         raw_output=raw_output,
-        exit_code=0,
+        exit_code=exit_code,
         duration_ms=1,
     )
     db_session.add(tool_result)
@@ -94,3 +94,47 @@ def test_one_dirty_dockerfile_of_two_scores_five_and_creates_findings(db_session
     assert len(findings) == 1
     assert findings[0].file == "backend/Dockerfile"
     assert findings[0].line == 2
+
+
+def test_orchestrator_crash_record_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session, audit, {"error": "Command 'docker' timed out after 120 seconds"}, exit_code=-1
+    )
+
+    score = normalize_dockerfile_hardening(db_session, scoring_run, criterion, [crashed])
+
+    assert score is None
+
+
+def test_all_dockerfiles_failed_to_lint_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {"dockerfiles": [{"path": "Dockerfile", "error": "Cannot connect to the Docker daemon"}]},
+        exit_code=1,
+    )
+
+    score = normalize_dockerfile_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_failed_dockerfile_is_excluded_from_the_ratio(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "dockerfiles": [
+                {"path": "Dockerfile", "error": "Cannot connect to the Docker daemon"},
+                {"path": "frontend/Dockerfile", "findings": []},
+            ]
+        },
+        exit_code=1,
+    )
+
+    score = normalize_dockerfile_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 10.0

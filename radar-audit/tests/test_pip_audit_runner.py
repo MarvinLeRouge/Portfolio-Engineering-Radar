@@ -38,6 +38,20 @@ def test_reports_vulnerabilities_on_a_known_vulnerable_pin(tmp_path):
     assert any(v["package"] == "pyyaml" and v["severity"] == "MEDIUM" for v in vulnerabilities)
 
 
+def test_reports_a_failed_audit_when_resolution_fails(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path, files={"requirements.txt": "this-package-does-not-exist-radar-xyz==1.0.0\n"}
+    )
+
+    runner = PipAuditRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["manifest_found"] is True
+    assert "error" in result.raw_output
+    assert "vulnerabilities" not in result.raw_output
+
+
 def test_reports_tool_identity():
     runner = PipAuditRunner()
 

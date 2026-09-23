@@ -36,34 +36,40 @@ class ComposerAuditRunner:
             )
 
         command = ["composer", "audit", "--format=json"]
+        # --locked audits composer.lock directly, so a checkout without an installed
+        # vendor/ is still audited (without it, composer only audits installed packages).
+        if (target_path / "composer.lock").exists():
+            command.append("--locked")
         start = time.monotonic()
         completed = subprocess.run(
             command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
         )
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        # With zero installed packages, `composer audit` prints nothing to stdout
+        # With zero packages to audit, `composer audit` prints nothing to stdout
         # ("No packages - skipping audit." goes to stderr instead) - confirmed
-        # empirically. Treat that the same as an explicit empty advisories list.
+        # empirically. That is only a clean result when the manifest declares no
+        # package dependencies; otherwise the audit never actually ran.
         stdout = completed.stdout.strip()
-        try:
-            data = json.loads(stdout) if stdout else {"advisories": []}
-        except json.JSONDecodeError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={
-                    "manifest_found": True,
-                    "stdout": completed.stdout,
-                    "stderr": completed.stderr,
-                },
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+        if not stdout:
+            if _declares_package_dependencies(manifest):
+                return self._failed(command, completed, duration_ms, "no packages were audited")
+            data: object = {"advisories": []}
+        else:
+            try:
+                data = json.loads(stdout)
+            except json.JSONDecodeError:
+                data = None
 
         # Composer's own JSON uses an object keyed by package name when advisories
         # exist, but an empty *array* (not `{}`) when none do - confirmed
-        # empirically; both shapes must be handled without crashing.
-        advisories = data.get("advisories", [])
+        # empirically; both shapes must be handled without crashing. Any other shape
+        # is a failed audit.
+        advisories = data.get("advisories") if isinstance(data, dict) else None
+        if not isinstance(advisories, dict | list):
+            return self._failed(
+                command, completed, duration_ms, "composer audit produced no advisories report"
+            )
         vulnerabilities = []
         if isinstance(advisories, dict):
             for package_advisories in advisories.values():
@@ -85,3 +91,42 @@ class ComposerAuditRunner:
             exit_code=completed.returncode,
             duration_ms=duration_ms,
         )
+
+    @staticmethod
+    def _failed(
+        command: list[str],
+        completed: subprocess.CompletedProcess[str],
+        duration_ms: int,
+        error: str,
+    ) -> RawToolOutput:
+        """Build the failure shape: an "error" key and no "vulnerabilities" list."""
+        return RawToolOutput(
+            command=" ".join(command),
+            raw_output={
+                "manifest_found": True,
+                "error": error,
+                "stdout": completed.stdout,
+                "stderr": completed.stderr,
+            },
+            exit_code=completed.returncode,
+            duration_ms=duration_ms,
+        )
+
+
+def _declares_package_dependencies(manifest: Path) -> bool:
+    """Tell whether composer.json requires any real package (vendor/name form).
+
+    Platform requirements (php, ext-*, lib-*) have no slash and are never audited. An
+    unreadable manifest is conservatively treated as declaring dependencies.
+    """
+    try:
+        data = json.loads(manifest.read_text())
+    except (OSError, json.JSONDecodeError):
+        return True
+    if not isinstance(data, dict):
+        return True
+    for section in ("require", "require-dev"):
+        requirements = data.get(section) or {}
+        if isinstance(requirements, dict) and any("/" in name for name in requirements):
+            return True
+    return False

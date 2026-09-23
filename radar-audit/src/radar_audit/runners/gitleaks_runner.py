@@ -42,6 +42,9 @@ class GitleaksRunner:
                 "/output/report.json",
                 "--exit-code",
                 "0",
+                # Replaces the secret value with REDACTED in Match/Secret so no raw
+                # credential is persisted in ToolResult.raw_output.
+                "--redact",
             ]
             completed, duration_ms = run_docker_command(args, timeout_s=self.timeout_s)
 
@@ -51,7 +54,12 @@ class GitleaksRunner:
             except (FileNotFoundError, json.JSONDecodeError):
                 return RawToolOutput(
                     command="docker run ... gitleaks git /repo",
-                    raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
+                    # Failure shape: an "error" key and no "findings" list.
+                    raw_output={
+                        "error": "gitleaks produced no readable report",
+                        "stdout": completed.stdout,
+                        "stderr": completed.stderr,
+                    },
                     exit_code=completed.returncode,
                     duration_ms=duration_ms,
                 )

@@ -55,6 +55,23 @@ def test_reports_vulnerabilities_on_a_known_vulnerable_pin(tmp_path):
     assert all(v["severity"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"} for v in vulnerabilities)
 
 
+def test_reports_a_failed_audit_when_there_is_no_lockfile(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "package.json": json.dumps({"name": "no-lock", "dependencies": {"lodash": "4.17.15"}})
+        },
+    )
+
+    runner = PnpmAuditRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["manifest_found"] is True
+    assert result.raw_output["error"]["code"] == "ERR_PNPM_AUDIT_NO_LOCKFILE"
+    assert "vulnerabilities" not in result.raw_output
+
+
 def test_reports_tool_identity():
     runner = PnpmAuditRunner()
 

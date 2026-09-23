@@ -64,6 +64,24 @@ def test_excludes_vendored_dockerfiles(tmp_path):
     assert dockerfiles[0]["path"] == "Dockerfile"
 
 
+def test_marks_a_dockerfile_as_failed_when_docker_is_unreachable(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"Dockerfile": "FROM ubuntu:20.04\nRUN apt-get update && apt-get install -y curl\n"},
+    )
+    monkeypatch.setenv("DOCKER_HOST", f"unix://{tmp_path}/nonexistent.sock")
+
+    runner = HadolintRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code != 0
+    dockerfiles = result.raw_output["dockerfiles"]
+    assert len(dockerfiles) == 1
+    assert "error" in dockerfiles[0]
+    assert "findings" not in dockerfiles[0]
+
+
 def test_reports_tool_identity():
     runner = HadolintRunner()
 

@@ -42,16 +42,47 @@ class SemgrepRunner:
         try:
             data = json.loads(completed.stdout)
         except json.JSONDecodeError:
+            data = None
+
+        if not _scan_succeeded(data, completed.returncode):
+            # Failure shape: an "error" key and no "results" list, so the normalizer
+            # never mistakes a failed scan for a clean one.
+            errors = data.get("errors") if isinstance(data, dict) else None
             return RawToolOutput(
                 command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
+                raw_output={
+                    "error": "semgrep scan failed",
+                    "errors": errors or [],
+                    "stdout": completed.stdout if data is None else "",
+                    "stderr": completed.stderr,
+                },
                 exit_code=completed.returncode,
                 duration_ms=duration_ms,
             )
 
         return RawToolOutput(
             command=" ".join(command),
-            raw_output={"results": data.get("results", [])},
+            raw_output={"results": data["results"]},
             exit_code=completed.returncode,
             duration_ms=duration_ms,
         )
+
+
+def _scan_succeeded(data: object, returncode: int) -> bool:
+    """Tell whether semgrep's JSON report reflects a scan that actually ran.
+
+    Exit codes >= 2 are semgrep hard failures (e.g. 7 for a rule download failure,
+    confirmed empirically). Per-file "warn"-level errors (a file that failed to parse)
+    come with exit code 0 and leave the rest of the scan valid, but an "error"-level
+    entry alongside empty results means the scan itself did not run.
+    """
+    if returncode >= 2 or not isinstance(data, dict):
+        return False
+    results = data.get("results")
+    if not isinstance(results, list):
+        return False
+    errors = data.get("errors") or []
+    has_fatal_error = any(
+        isinstance(error, dict) and error.get("level") == "error" for error in errors
+    )
+    return bool(results) or not has_fatal_error

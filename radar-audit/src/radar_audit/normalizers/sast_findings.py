@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import has_success_payload
+
 _RAW_SEVERITY_MAP = {"ERROR": "HIGH", "WARNING": "MEDIUM", "INFO": "LOW"}
 _SEVERITY_ENUM = {
     "HIGH": FindingSeverity.HIGH,
@@ -26,13 +28,17 @@ def normalize_sast_findings(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
-    relevant = [r for r in tool_results if r.tool_name == "semgrep"]
+    # A failed semgrep run (crash record, unparsable output, hard scan error) is
+    # missing data, never a clean "no findings" result.
+    relevant = [
+        r for r in tool_results if r.tool_name == "semgrep" and has_success_payload(r, "results")
+    ]
     if not relevant:
         return None
 
     worst = "NONE"
     for tool_result in relevant:
-        for result in tool_result.raw_output.get("results", []):
+        for result in tool_result.raw_output["results"]:
             raw_severity = result["extra"]["severity"]
             severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
             session.add(

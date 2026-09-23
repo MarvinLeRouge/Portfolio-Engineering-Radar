@@ -119,6 +119,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Remove accidentally staged embedded git repo
 - *(radar-audit)* Delete cascaded Finding rows before ToolResult/ScoringRun reuse
 - *(radar-audit)* Mark severity bands provisional in criterion 4.2 normalizer
+- *(radar-audit)* Stop scoring failed security tool runs as clean
 
 ### 🚜 Refactor
 

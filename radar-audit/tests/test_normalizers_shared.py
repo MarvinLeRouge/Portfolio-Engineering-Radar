@@ -3,9 +3,10 @@ from radar_audit.normalizers.shared import (
     CriterionNotFoundError,
     get_criterion,
     get_or_create_scoring_run,
+    has_success_payload,
 )
 from radar_audit.taxonomy.seed import seed_taxonomy
-from radar_core.models.audit import Audit
+from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.repository import Repository
 
 
@@ -60,3 +61,36 @@ def test_get_criterion_raises_when_not_found(db_session):
 
     with pytest.raises(CriterionNotFoundError):
         get_criterion(db_session, methodology_version.id, "Nonexistent", "Nope")
+
+
+def _tool_result(raw_output, exit_code=0):
+    return ToolResult(
+        audit_id=1,
+        subproject_path=".",
+        tool_name="stub",
+        tool_version="1.0.0",
+        command="stub",
+        raw_output=raw_output,
+        exit_code=exit_code,
+        duration_ms=1,
+    )
+
+
+def test_has_success_payload_accepts_an_empty_payload_list():
+    assert has_success_payload(_tool_result({"findings": []}), "findings") is True
+
+
+def test_has_success_payload_rejects_the_orchestrator_crash_record():
+    crashed = _tool_result({"error": "timed out"}, exit_code=-1)
+
+    assert has_success_payload(crashed, "findings") is False
+
+
+def test_has_success_payload_rejects_a_missing_payload_key():
+    assert has_success_payload(_tool_result({"stdout": "", "stderr": ""}), "findings") is False
+
+
+def test_has_success_payload_rejects_a_runner_reported_error():
+    failed = _tool_result({"error": "boom", "vulnerabilities": []})
+
+    assert has_success_payload(failed, "vulnerabilities") is False

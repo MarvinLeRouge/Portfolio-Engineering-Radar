@@ -27,7 +27,7 @@ def _make_scoring_run_and_criterion(db_session):
     return audit, scoring_run, criterion
 
 
-def _make_tool_result(db_session, audit, tool_name, raw_output, subproject_path="."):
+def _make_tool_result(db_session, audit, tool_name, raw_output, subproject_path=".", exit_code=0):
     tool_result = ToolResult(
         audit_id=audit.id,
         subproject_path=subproject_path,
@@ -35,7 +35,7 @@ def _make_tool_result(db_session, audit, tool_name, raw_output, subproject_path=
         tool_version="1.0.0",
         command="stub",
         raw_output=raw_output,
-        exit_code=0,
+        exit_code=exit_code,
         duration_ms=1,
     )
     db_session.add(tool_result)
@@ -177,3 +177,73 @@ def test_skips_tool_results_where_manifest_not_found(db_session):
     )
 
     assert score.value == 10.0
+
+
+def test_orchestrator_crash_record_alone_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    crashed = _make_tool_result(
+        db_session,
+        audit,
+        "pip-audit",
+        {"error": "Command 'docker' timed out after 120 seconds"},
+        exit_code=-1,
+    )
+
+    score = normalize_dependency_vulnerabilities(db_session, scoring_run, criterion, [crashed])
+
+    assert score is None
+
+
+def test_runner_reported_failures_alone_return_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    pnpm_failed = _make_tool_result(
+        db_session,
+        audit,
+        "pnpm-audit",
+        {"manifest_found": True, "error": {"code": "ERR_PNPM_AUDIT_NO_LOCKFILE"}},
+        subproject_path="frontend",
+        exit_code=1,
+    )
+    pip_failed = _make_tool_result(
+        db_session,
+        audit,
+        "pip-audit",
+        {"manifest_found": True, "error": "pip-audit produced no dependency report"},
+        subproject_path="backend",
+        exit_code=1,
+    )
+
+    score = normalize_dependency_vulnerabilities(
+        db_session, scoring_run, criterion, [pnpm_failed, pip_failed]
+    )
+
+    assert score is None
+
+
+def test_failed_audit_is_excluded_when_another_subproject_succeeded(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    failed = _make_tool_result(
+        db_session,
+        audit,
+        "composer-audit",
+        {"manifest_found": True, "error": "no packages were audited"},
+        subproject_path="api",
+    )
+    succeeded = _make_tool_result(
+        db_session,
+        audit,
+        "pnpm-audit",
+        {
+            "manifest_found": True,
+            "vulnerabilities": [
+                {"id": "1", "package": "lodash", "severity": "HIGH", "fix_available": True}
+            ],
+        },
+        subproject_path="web",
+    )
+
+    score = normalize_dependency_vulnerabilities(
+        db_session, scoring_run, criterion, [failed, succeeded]
+    )
+
+    assert score.value == 4.0

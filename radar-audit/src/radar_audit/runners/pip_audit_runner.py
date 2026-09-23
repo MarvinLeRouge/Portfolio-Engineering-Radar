@@ -51,10 +51,16 @@ class PipAuditRunner:
         try:
             data = json.loads(completed.stdout)
         except json.JSONDecodeError:
+            data = None
+
+        if not isinstance(data, dict) or not isinstance(data.get("dependencies"), list):
+            # Failure shape (missing python, resolution or network error): an "error"
+            # key and no "vulnerabilities" list, so it never reads as a clean audit.
             return RawToolOutput(
                 command=" ".join(command),
                 raw_output={
                     "manifest_found": True,
+                    "error": "pip-audit produced no dependency report",
                     "stdout": completed.stdout,
                     "stderr": completed.stderr,
                 },
@@ -63,7 +69,7 @@ class PipAuditRunner:
             )
 
         vulnerabilities = []
-        for dependency in data.get("dependencies", []):
+        for dependency in data["dependencies"]:
             for vuln in dependency.get("vulns", []):
                 vulnerabilities.append(
                     {

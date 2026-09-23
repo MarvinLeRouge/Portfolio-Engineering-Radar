@@ -25,8 +25,9 @@ class HadolintRunner:
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         dockerfiles = self._discover_dockerfiles(target_path, exclude_paths)
 
-        results = []
+        results: list[dict[str, object]] = []
         total_duration_ms = 0
+        any_failed = False
         for dockerfile in dockerfiles:
             completed, duration_ms = run_docker_command(
                 ["-i", "hadolint/hadolint", "hadolint", "--format", "json", "-"],
@@ -34,18 +35,31 @@ class HadolintRunner:
                 input_text=dockerfile.read_text(),
             )
             total_duration_ms += duration_ms
-            try:
-                findings = json.loads(completed.stdout)
-            except json.JSONDecodeError:
-                findings = []
-            results.append({"path": str(dockerfile.relative_to(target_path)), "findings": findings})
+            relative_path = str(dockerfile.relative_to(target_path))
+            findings = self._parse_findings(completed.stdout)
+            if findings is None:
+                # Failed lint (e.g. Docker daemon unreachable): an "error" entry with no
+                # findings list, so the normalizer never counts it as a clean Dockerfile.
+                any_failed = True
+                results.append({"path": relative_path, "error": completed.stderr.strip()})
+            else:
+                results.append({"path": relative_path, "findings": findings})
 
         return RawToolOutput(
             command="docker run ... hadolint --format json -",
             raw_output={"dockerfiles": results},
-            exit_code=0,
+            exit_code=1 if any_failed else 0,
             duration_ms=total_duration_ms,
         )
+
+    @staticmethod
+    def _parse_findings(stdout: str) -> list[dict[str, object]] | None:
+        """Parse hadolint's JSON findings list, or return None if hadolint did not run."""
+        try:
+            findings = json.loads(stdout)
+        except json.JSONDecodeError:
+            return None
+        return findings if isinstance(findings, list) else None
 
     def _discover_dockerfiles(self, target_path: Path, exclude_paths: list[Path]) -> list[Path]:
         found = []

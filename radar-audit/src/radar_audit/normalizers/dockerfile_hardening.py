@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import has_success_payload
+
 
 def normalize_dockerfile_hardening(
     session: Session,
@@ -14,16 +16,25 @@ def normalize_dockerfile_hardening(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
-    relevant = [r for r in tool_results if r.tool_name == "hadolint"]
+    # A crashed hadolint run carries no "dockerfiles" list and is missing data.
+    relevant = [
+        r
+        for r in tool_results
+        if r.tool_name == "hadolint" and has_success_payload(r, "dockerfiles")
+    ]
     if not relevant:
         return None
 
     clean = 0
     total = 0
     for tool_result in relevant:
-        for entry in tool_result.raw_output.get("dockerfiles", []):
+        for entry in tool_result.raw_output["dockerfiles"]:
+            findings = entry.get("findings")
+            # A Dockerfile hadolint failed to lint carries an "error" key instead of a
+            # findings list: it is left out of the ratio rather than counted as clean.
+            if not isinstance(findings, list) or "error" in entry:
+                continue
             total += 1
-            findings = entry.get("findings", [])
             if not findings:
                 clean += 1
                 continue
