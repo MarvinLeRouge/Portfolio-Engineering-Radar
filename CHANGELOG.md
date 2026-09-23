@@ -69,6 +69,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_ci_test_execution for criterion 3.4
 - *(radar-audit)* Register category 3 runners for CLI dispatch
 - *(radar-audit)* Add criterion-to-normalizer registry for categories 1-3
+- *(radar-audit)* Add score_repository with category-level weighted aggregation
 
 ### 🐛 Bug Fixes
 
