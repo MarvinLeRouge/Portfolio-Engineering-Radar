@@ -68,6 +68,11 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_e2e_tests for criterion 3.3
 - *(radar-audit)* Add normalize_ci_test_execution for criterion 3.4
 - *(radar-audit)* Register category 3 runners for CLI dispatch
+- *(radar-audit)* Add criterion-to-normalizer registry for categories 1-3
+- *(radar-audit)* Add score_repository with category-level weighted aggregation
+- *(radar-audit)* Add render_report/write_report for per-repo Markdown output
+- *(radar-audit)* Add 'radar-audit score' CLI command
+- *(radar-audit)* Add 'radar-audit report' CLI command, gitignore generated reports
 
 ### 🐛 Bug Fixes
 
@@ -98,6 +103,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* VitestRunner ignores exclude_paths, double-counting nested worktree tests
 - *(radar-audit)* Classify test files by repo-relative path, not absolute path
 - Remove accidentally staged embedded git repo
+- *(radar-audit)* Delete cascaded Finding rows before ToolResult/ScoringRun reuse
 
 ### 🚜 Refactor
 
@@ -151,6 +157,9 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add architecture summary page
 - Standardize bilingual banners across remaining doc pairs
 - Document the local post-commit changelog hook
+- Add design spec for category-level scoring and report pipeline (scope A)
+- Add implementation plan for category-level scoring and report pipeline (scope A)
+- *(radar-audit)* Mark scoring and report pipeline plan complete
 
 ### 🧪 Testing
 
