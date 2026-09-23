@@ -61,6 +61,9 @@ def normalize_secrets_in_history(
                 )
             )
 
+    # Severity bands per the category-4 spec's section 3.2 - resolved but provisional,
+    # pending Phase 5 portfolio-wide calibration: confirmed finding scores 2.0, pre-filtered
+    # finding scores 8.0, no findings score 10.0.
     if any_confirmed:
         value = 2.0
     elif any_pre_filtered:
