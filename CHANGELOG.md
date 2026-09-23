@@ -179,6 +179,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Mark scoring and report pipeline plan complete
 - *(radar-audit)* Add category 4 security design spec
 - Write radar-audit category 4 (security) implementation plan
+- Mark category 4 (security) complete in roadmap
 
 ### 🧪 Testing
 
