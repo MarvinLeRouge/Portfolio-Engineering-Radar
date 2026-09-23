@@ -48,6 +48,23 @@ class GitleaksRunner:
             ]
             completed, duration_ms = run_docker_command(args, timeout_s=self.timeout_s)
 
+            # Gitleaks exits 0 and writes a valid empty report ("[]") when the
+            # target has no readable git history (e.g. a worktree pointer file,
+            # or a directory with no .git at all) - it logs this fatal error to
+            # stderr instead of failing the process, so an empty findings list
+            # alone cannot distinguish "clean scan" from "never scanned".
+            if "fatal: not a git repository" in completed.stderr:
+                return RawToolOutput(
+                    command="docker run ... gitleaks git /repo",
+                    raw_output={
+                        "error": "gitleaks could not read the target's git history",
+                        "stdout": completed.stdout,
+                        "stderr": completed.stderr,
+                    },
+                    exit_code=1,
+                    duration_ms=duration_ms,
+                )
+
             report_path = Path(output_dir) / "report.json"
             try:
                 raw_findings = json.loads(report_path.read_text())

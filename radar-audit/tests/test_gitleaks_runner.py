@@ -62,6 +62,19 @@ def test_redacts_the_secret_but_keeps_the_variable_name(tmp_path):
     assert _is_pre_filtered(fake)
 
 
+def test_reports_a_failed_run_when_target_has_no_git_history(tmp_path):
+    repo_path = tmp_path / "not-a-repo"
+    repo_path.mkdir()
+    (repo_path / "src.py").write_text("x = 1\n")
+
+    runner = GitleaksRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert "findings" not in result.raw_output
+    assert "error" in result.raw_output
+    assert result.exit_code != 0
+
+
 def test_reports_tool_identity():
     runner = GitleaksRunner()
 
