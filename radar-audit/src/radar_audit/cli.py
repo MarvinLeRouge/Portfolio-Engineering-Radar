@@ -32,6 +32,7 @@ from radar_audit.runners.ruff_runner import RuffRunner
 from radar_audit.runners.static_loc_runner import StaticLocRunner
 from radar_audit.runners.typescript_runner import TypeScriptRunner
 from radar_audit.runners.vitest_runner import VitestRunner
+from radar_audit.scoring import NoAuditFoundError, RepositoryNotFoundError, score_repository
 
 app = typer.Typer()
 
@@ -81,6 +82,8 @@ _EXPECTED_ERRORS = (
     PortfolioConfigError,
     FileNotFoundError,
     CalledProcessError,
+    RepositoryNotFoundError,
+    NoAuditFoundError,
 )
 
 
@@ -137,6 +140,23 @@ def _print_plan(plan: AuditPlan) -> None:
         typer.echo(f"  subproject: {subproject.path} [{subproject.stack}]")
     for run in planned_runs(plan, DEFAULT_RUNNERS):
         typer.echo(f"  {run.target_path}: would run: {run.runner.tool_name}")
+
+
+@app.command()
+def score(
+    repo_name: str = typer.Argument(..., help="Repository name (must already have an audit)"),
+) -> None:
+    try:
+        engine = get_engine(_database_url())
+        session = get_session(engine)
+        try:
+            score_repository(session, repo_name)
+        finally:
+            session.close()
+            engine.dispose()
+    except _EXPECTED_ERRORS as exc:
+        typer.secho(f"Error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(1) from exc
 
 
 if __name__ == "__main__":
