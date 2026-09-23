@@ -160,6 +160,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add design spec for category-level scoring and report pipeline (scope A)
 - Add implementation plan for category-level scoring and report pipeline (scope A)
 - *(radar-audit)* Mark scoring and report pipeline plan complete
+- *(radar-audit)* Add category 4 security design spec
 
 ### 🧪 Testing
 
