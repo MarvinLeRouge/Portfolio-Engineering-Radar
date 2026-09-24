@@ -87,6 +87,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add HadolintRunner for criterion 4.5
 - *(radar-audit)* Add normalizer for criterion 4.5
 - *(radar-audit)* Register category 4 runners and normalizers
+- *(radar-audit)* Dispatch dependency audit to npm when package-lock.json is present
+- *(radar-audit)* Dispatch dependency audit to yarn when yarn.lock is present
 
 ### 🐛 Bug Fixes
 
@@ -132,6 +134,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Prefer exact hook id match and use word-boundary keyword search
 - *(radar-audit)* Exclude docs and dot-directories from jscpd scan
 - *(radar-audit)* Anchor jscpd ignore patterns to the target repo path
+- *(radar-audit)* Deduplicate yarn advisories and cover fix_available for pnpm and yarn
 
 ### 🚜 Refactor
 
@@ -196,6 +199,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit precommit-hook-matching implementation plan
 - Write radar-audit jscpd-exclusions implementation plan
 - Remove em dashes from the jscpd-exclusions plan
+- Write radar-audit dependency-audit lockfile-dispatch implementation plan
 
 ### 🧪 Testing
 
