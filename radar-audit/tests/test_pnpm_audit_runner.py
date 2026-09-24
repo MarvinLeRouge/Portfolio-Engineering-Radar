@@ -14,6 +14,10 @@ def _npm_install(repo_path):
     subprocess.run(["npm", "install", "--package-lock-only"], cwd=repo_path, check=True)
 
 
+def _yarn_install(repo_path):
+    subprocess.run(["npx", "--package=yarn", "--", "yarn", "install"], cwd=repo_path, check=True)
+
+
 def test_reports_no_manifest(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(repo_path, files={"src/a.js": "console.log('hi');\n"})
@@ -151,6 +155,37 @@ def test_npm_parser_reports_no_fix_available_when_fixavailable_is_false():
     vulnerabilities = PnpmAuditRunner._parse_npm_audit(stdout)
 
     assert vulnerabilities[0]["fix_available"] is False
+
+
+def test_dispatches_to_yarn_audit_when_yarn_lock_is_present(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "package.json": json.dumps(
+                {"name": "yarn-dispatch-test", "dependencies": {"lodash": "4.17.15"}}
+            )
+        },
+    )
+    _yarn_install(repo_path)
+
+    runner = PnpmAuditRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert "yarn" in result.command
+    assert result.raw_output["manifest_found"] is True
+    vulnerabilities = result.raw_output["vulnerabilities"]
+    assert len(vulnerabilities) > 0
+    assert all(v["package"] == "lodash" for v in vulnerabilities)
+    assert all(v["severity"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"} for v in vulnerabilities)
+
+
+def test_yarn_parser_returns_none_when_no_summary_line_is_reached():
+    stdout = '{"type":"warning","data":"something"}\n'
+
+    result = PnpmAuditRunner._parse_yarn_audit(stdout)
+
+    assert result is None
 
 
 def test_reports_tool_identity():

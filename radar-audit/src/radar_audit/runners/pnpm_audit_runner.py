@@ -172,7 +172,40 @@ class PnpmAuditRunner:
 
     @staticmethod
     def _parse_yarn_audit(stdout: str) -> list[dict[str, object]] | None:
-        raise NotImplementedError("added in Task 2")
+        # yarn classic prints one JSON object per line (not a single JSON
+        # document): "auditAdvisory" records carry the same advisory shape
+        # as pnpm's (id/module_name/severity/patched_versions), and a
+        # trailing "auditSummary" record marks a completed run. Its absence
+        # means yarn errored out before finishing the audit.
+        vulnerabilities = []
+        saw_summary = False
+        for line in stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                return None
+            if not isinstance(record, dict):
+                return None
+            record_type = record.get("type")
+            if record_type == "auditAdvisory":
+                advisory = record.get("data", {}).get("advisory", {})
+                patched = advisory.get("patched_versions")
+                vulnerabilities.append(
+                    {
+                        "id": str(advisory["id"]),
+                        "package": advisory["module_name"],
+                        "severity": _SEVERITY_MAP.get(advisory.get("severity", ""), "MEDIUM"),
+                        "fix_available": bool(patched) and patched != "<0.0.0",
+                    }
+                )
+            elif record_type == "auditSummary":
+                saw_summary = True
+        if not saw_summary:
+            return None
+        return vulnerabilities
 
     @staticmethod
     def _failed(
