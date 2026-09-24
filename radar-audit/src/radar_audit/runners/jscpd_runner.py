@@ -9,7 +9,8 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 
-_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build")
+_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build", "docs")
+_DOT_DIRECTORY_IGNORE_SUFFIX = "**/.*/**"
 
 
 class JscpdRunner:
@@ -23,7 +24,8 @@ class JscpdRunner:
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         with tempfile.TemporaryDirectory() as report_dir:
-            ignore_patterns = [f"**/{name}/**" for name in _ALWAYS_EXCLUDED_DIRNAMES]
+            ignore_patterns = [f"{target_path}/**/{name}/**" for name in _ALWAYS_EXCLUDED_DIRNAMES]
+            ignore_patterns.append(f"{target_path}/{_DOT_DIRECTORY_IGNORE_SUFFIX}")
             for excluded in exclude_paths:
                 ignore_patterns.append(f"{excluded}/**")
 

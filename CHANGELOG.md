@@ -130,6 +130,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Capture name and entry fields in precommit config parsing
 - *(radar-audit)* Classify precommit hooks by keyword match, not exact id
 - *(radar-audit)* Prefer exact hook id match and use word-boundary keyword search
+- *(radar-audit)* Exclude docs and dot-directories from jscpd scan
+- *(radar-audit)* Anchor jscpd ignore patterns to the target repo path
 
 ### 🚜 Refactor
 
@@ -192,6 +194,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit subproject-scope-leaks implementation plan
 - Write radar-audit mypy-cwd-and-severity implementation plan
 - Write radar-audit precommit-hook-matching implementation plan
+- Write radar-audit jscpd-exclusions implementation plan
+- Remove em dashes from the jscpd-exclusions plan
 
 ### 🧪 Testing
 
