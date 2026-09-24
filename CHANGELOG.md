@@ -128,6 +128,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Pin MypyRunner subprocess cwd to target_path
 - *(radar-audit)* Exclude note-level diagnostics from type-check flagged files
 - *(radar-audit)* Capture name and entry fields in precommit config parsing
+- *(radar-audit)* Classify precommit hooks by keyword match, not exact id
 
 ### 🚜 Refactor
 

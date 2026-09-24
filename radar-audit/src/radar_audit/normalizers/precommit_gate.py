@@ -42,6 +42,11 @@ _HOOK_ID_CLASSIFICATION: dict[str, tuple[str, str]] = {
     "phpstan": ("type-check", "backend"),
 }
 
+# Longest keyword first, so a hook id/name/entry containing both "ruff" and
+# "ruff-format" (e.g. a hook literally named "ruff-format-backend") resolves
+# to the more specific "ruff-format" match instead of the shorter "ruff".
+_CLASSIFICATION_KEYWORDS_BY_LENGTH = sorted(_HOOK_ID_CLASSIFICATION, key=len, reverse=True)
+
 # Hook ids that straddle two validator types in practice and should count toward
 # both cells when detected -- currently only Pint, which enforces both formatting
 # and lint-like style rules in a single pass for PHP (docs/toolchain.md's
@@ -130,10 +135,10 @@ def _classify_entry(entry: dict[str, str | None]) -> list[tuple[str, str]]:
     hook_id = entry.get("id")
     if not isinstance(hook_id, str):
         return []
-    base = _HOOK_ID_CLASSIFICATION.get(hook_id)
-    if base is None:
+    keyword = _match_classification_keyword(hook_id, entry.get("name"), entry.get("entry"))
+    if keyword is None:
         return []
-    validator_type, default_domain = base
+    validator_type, default_domain = _HOOK_ID_CLASSIFICATION[keyword]
     files = entry.get("files")
     if isinstance(files, str) and "backend" in files:
         domain = "backend"
@@ -142,7 +147,20 @@ def _classify_entry(entry: dict[str, str | None]) -> list[tuple[str, str]]:
     else:
         domain = default_domain
     classified = [(validator_type, domain)]
-    extra_validator_type = _STRADDLING_VALIDATOR_TYPES.get(hook_id)
+    extra_validator_type = _STRADDLING_VALIDATOR_TYPES.get(keyword)
     if extra_validator_type is not None:
         classified.append((extra_validator_type, domain))
     return classified
+
+
+def _match_classification_keyword(*values: str | None) -> str | None:
+    # A hook's real identity may live in its id (upstream-repo hooks, or a
+    # local hook named after its tool), its name (local hooks only), or its
+    # entry command (the one field guaranteed to name the real tool, per
+    # finding #5's suggested fix) -- search all three at once rather than
+    # requiring the match to land in any one specific field.
+    haystack = " ".join(value.lower() for value in values if isinstance(value, str))
+    for keyword in _CLASSIFICATION_KEYWORDS_BY_LENGTH:
+        if keyword in haystack:
+            return keyword
+    return None
