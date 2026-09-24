@@ -40,6 +40,36 @@ pre-commit:
       run: prettier --check .
 """
 
+_DESCRIPTIVE_LOCAL_HOOKS_CONFIG = """
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+  - repo: local
+    hooks:
+      - id: eslint-frontend
+        name: eslint-frontend
+        entry: eslint --fix frontend/
+        language: system
+        files: ^frontend/
+      - id: prettier-frontend
+        name: prettier-frontend
+        entry: prettier --write frontend/
+        language: system
+        files: ^frontend/
+      - id: vue-tsc-frontend
+        name: vue-tsc-frontend
+        entry: vue-tsc --noEmit
+        language: system
+        files: ^frontend/
+"""
+
 
 def test_reports_none_tier_when_no_hook_config_exists(tmp_path):
     repo_path = tmp_path / "repo"
@@ -63,6 +93,30 @@ def test_parses_precommit_config_hooks(tmp_path):
     ids = [e["id"] for e in result.raw_output["entries"]]
     assert ids == ["ruff", "ruff-format", "mypy", "eslint", "prettier", "vue-tsc"]
     assert all(e["files"] is None for e in result.raw_output["entries"])
+
+
+def test_parses_precommit_config_captures_name_and_entry_for_descriptive_local_hooks(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={".pre-commit-config.yaml": _DESCRIPTIVE_LOCAL_HOOKS_CONFIG})
+
+    runner = PreCommitGateRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    entries = result.raw_output["entries"]
+    by_id = {e["id"]: e for e in entries}
+
+    # Upstream-repo hooks (not `repo: local`) carry no name/entry in the
+    # consuming repo's own config -- those fields live on the hook's own
+    # upstream definition, never surfaced here.
+    assert by_id["ruff"]["name"] is None
+    assert by_id["ruff"]["entry"] is None
+
+    # Local hooks with descriptive ids carry both fields, which is exactly
+    # what lets classification recover the real tool identity downstream.
+    assert by_id["eslint-frontend"]["name"] == "eslint-frontend"
+    assert by_id["eslint-frontend"]["entry"] == "eslint --fix frontend/"
+    assert by_id["prettier-frontend"]["entry"] == "prettier --write frontend/"
+    assert by_id["vue-tsc-frontend"]["entry"] == "vue-tsc --noEmit"
 
 
 def test_chains_husky_hook_through_lint_staged_with_directory_scoped_patterns(tmp_path):

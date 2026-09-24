@@ -127,6 +127,9 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Scope subproject exclusions to subproject-scoped runs only
 - *(radar-audit)* Pin MypyRunner subprocess cwd to target_path
 - *(radar-audit)* Exclude note-level diagnostics from type-check flagged files
+- *(radar-audit)* Capture name and entry fields in precommit config parsing
+- *(radar-audit)* Classify precommit hooks by keyword match, not exact id
+- *(radar-audit)* Prefer exact hook id match and use word-boundary keyword search
 
 ### 🚜 Refactor
 
@@ -188,6 +191,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Mark category 4 (security) complete in roadmap
 - Write radar-audit subproject-scope-leaks implementation plan
 - Write radar-audit mypy-cwd-and-severity implementation plan
+- Write radar-audit precommit-hook-matching implementation plan
 
 ### 🧪 Testing
 
