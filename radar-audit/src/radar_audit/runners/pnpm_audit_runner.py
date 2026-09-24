@@ -177,7 +177,13 @@ class PnpmAuditRunner:
         # as pnpm's (id/module_name/severity/patched_versions), and a
         # trailing "auditSummary" record marks a completed run. Its absence
         # means yarn errored out before finishing the audit.
+        #
+        # yarn classic emits one auditAdvisory line per dependency path that
+        # reaches a given advisory: a vulnerable transitive package pulled in
+        # by N different parents produces N lines for the same advisory id.
+        # Dedupe by id so one vulnerability is not reported N times.
         vulnerabilities = []
+        seen: set[str] = set()
         saw_summary = False
         for line in stdout.splitlines():
             line = line.strip()
@@ -192,10 +198,14 @@ class PnpmAuditRunner:
             record_type = record.get("type")
             if record_type == "auditAdvisory":
                 advisory = record.get("data", {}).get("advisory", {})
+                advisory_id = str(advisory["id"])
+                if advisory_id in seen:
+                    continue
+                seen.add(advisory_id)
                 patched = advisory.get("patched_versions")
                 vulnerabilities.append(
                     {
-                        "id": str(advisory["id"]),
+                        "id": advisory_id,
                         "package": advisory["module_name"],
                         "severity": _SEVERITY_MAP.get(advisory.get("severity", ""), "MEDIUM"),
                         "fix_available": bool(patched) and patched != "<0.0.0",

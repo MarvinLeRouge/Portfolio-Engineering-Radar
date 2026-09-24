@@ -134,6 +134,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Prefer exact hook id match and use word-boundary keyword search
 - *(radar-audit)* Exclude docs and dot-directories from jscpd scan
 - *(radar-audit)* Anchor jscpd ignore patterns to the target repo path
+- *(radar-audit)* Deduplicate yarn advisories and cover fix_available for pnpm and yarn
 
 ### 🚜 Refactor
 

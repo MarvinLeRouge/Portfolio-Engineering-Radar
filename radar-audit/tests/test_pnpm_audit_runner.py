@@ -157,6 +157,44 @@ def test_npm_parser_reports_no_fix_available_when_fixavailable_is_false():
     assert vulnerabilities[0]["fix_available"] is False
 
 
+def test_pnpm_parser_reports_no_fix_available_when_patched_versions_is_placeholder():
+    stdout = json.dumps(
+        {
+            "advisories": {
+                "1065": {
+                    "id": 1065,
+                    "module_name": "lodash",
+                    "severity": "high",
+                    "patched_versions": "<0.0.0",
+                }
+            }
+        }
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_pnpm_audit(stdout)
+
+    assert vulnerabilities[0]["fix_available"] is False
+
+
+def test_pnpm_parser_reports_fix_available_when_a_patched_version_exists():
+    stdout = json.dumps(
+        {
+            "advisories": {
+                "1065": {
+                    "id": 1065,
+                    "module_name": "lodash",
+                    "severity": "high",
+                    "patched_versions": ">=4.17.21",
+                }
+            }
+        }
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_pnpm_audit(stdout)
+
+    assert vulnerabilities[0]["fix_available"] is True
+
+
 def test_dispatches_to_yarn_audit_when_yarn_lock_is_present(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -186,6 +224,45 @@ def test_yarn_parser_returns_none_when_no_summary_line_is_reached():
     result = PnpmAuditRunner._parse_yarn_audit(stdout)
 
     assert result is None
+
+
+def test_yarn_parser_deduplicates_advisories_reached_through_multiple_paths():
+    stdout = (
+        '{"type":"auditAdvisory","data":{"advisory":{"id":1065,"module_name":"lodash",'
+        '"severity":"high","patched_versions":">=4.17.21"}}}\n'
+        '{"type":"auditAdvisory","data":{"advisory":{"id":1065,"module_name":"lodash",'
+        '"severity":"high","patched_versions":">=4.17.21"}}}\n'
+        '{"type":"auditSummary","data":{}}\n'
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_yarn_audit(stdout)
+
+    assert len(vulnerabilities) == 1
+    assert vulnerabilities[0]["id"] == "1065"
+
+
+def test_yarn_parser_reports_no_fix_available_when_patched_versions_is_placeholder():
+    stdout = (
+        '{"type":"auditAdvisory","data":{"advisory":{"id":1065,"module_name":"lodash",'
+        '"severity":"high","patched_versions":"<0.0.0"}}}\n'
+        '{"type":"auditSummary","data":{}}\n'
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_yarn_audit(stdout)
+
+    assert vulnerabilities[0]["fix_available"] is False
+
+
+def test_yarn_parser_reports_fix_available_when_a_patched_version_exists():
+    stdout = (
+        '{"type":"auditAdvisory","data":{"advisory":{"id":1065,"module_name":"lodash",'
+        '"severity":"high","patched_versions":">=4.17.21"}}}\n'
+        '{"type":"auditSummary","data":{}}\n'
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_yarn_audit(stdout)
+
+    assert vulnerabilities[0]["fix_available"] is True
 
 
 def test_reports_tool_identity():
