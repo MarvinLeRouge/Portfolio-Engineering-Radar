@@ -113,7 +113,7 @@ def _subproject_exclusions(target_path: Path, subprojects: list[SubProject]) -> 
     colocated multi-stack subproject at the same physical directory).
     """
     resolved_target = target_path.resolve()
-    exclusions = []
+    exclusions: list[Path] = []
     for subproject in subprojects:
         resolved_subproject = subproject.path.resolve()
         if resolved_subproject == resolved_target:
@@ -183,9 +183,12 @@ def execute_audit(
         session.delete(result)
 
     for run in planned_runs(plan, runners):
-        run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
-            run.target_path, plan.subprojects
-        )
+        if run.runner.scope == "subproject":
+            run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
+                run.target_path, plan.subprojects
+            )
+        else:
+            run_exclude_paths = plan.exclude_paths
         raw = _run_tool_safely(run.runner, run.target_path, run_exclude_paths)
         session.add(
             ToolResult(

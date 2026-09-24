@@ -402,3 +402,29 @@ def test_execute_audit_does_not_exclude_colocated_same_path_subprojects(db_sessi
     (call_target, call_excludes) = runner.calls[0]
     assert call_target == root_path
     assert root_path not in call_excludes
+
+
+class _RepoScopeRecordingRunner(_RecordingRunner):
+    tool_name = "repo-scope-recording-stub"
+    scope = "repo"
+
+
+def test_execute_audit_does_not_exclude_subprojects_for_repo_scope_runner(db_session, tmp_path):
+    # A repo-scoped runner (e.g. semgrep, hadolint) must see the whole repo,
+    # including nested subprojects -- only subproject-scoped runners get
+    # `_subproject_exclusions` applied.
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"package.json": "{}\n", "backend/pyproject.toml": "[project]\nname='x'\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    runner = _RepoScopeRecordingRunner()
+
+    execute_audit(db_session, config, "repo", [runner])
+
+    backend_path = (repo_path / "backend").resolve()
+    assert len(runner.calls) == 1
+    (call_target, call_excludes) = runner.calls[0]
+    assert call_target == repo_path.resolve()
+    assert backend_path not in call_excludes

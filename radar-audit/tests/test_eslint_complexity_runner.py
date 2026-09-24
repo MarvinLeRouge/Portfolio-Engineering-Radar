@@ -80,7 +80,6 @@ def test_excludes_paths_passed_via_exclude_paths(tmp_path):
 
 
 @pytest.mark.slow
-@pytest.mark.slow
 def test_always_excludes_dist_directory_regardless_of_exclude_paths(tmp_path):
     repo_path = tmp_path / "test_repo_for_build_check"
     init_git_repo(
