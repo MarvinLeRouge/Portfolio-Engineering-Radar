@@ -80,6 +80,30 @@ def test_excludes_paths_passed_via_exclude_paths(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.slow
+def test_always_excludes_dist_directory_regardless_of_exclude_paths(tmp_path):
+    repo_path = tmp_path / "test_repo_for_build_check"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _SIMPLE_FUNCTION,
+            "dist/bundle.js": _COMPLEX_FUNCTION,
+        },
+    )
+    _write_package_json(repo_path)
+
+    runner = EslintComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    complexities = result.raw_output["complexities"]
+    excluded_files = [c["file"] for c in complexities]
+    # bundle.js from dist/ should be excluded
+    assert not any("bundle.js" in f for f in excluded_files), "dist/bundle.js should be excluded"
+    # a.js from src/ should still be checked
+    assert any("a.js" in f for f in excluded_files), "src/a.js should not be excluded"
+
+
+@pytest.mark.slow
 def test_runs_successfully_on_esm_type_targets(tmp_path):
     """Regression test: ensure runner survives targets with package.json "type": "module"."""
     repo_path = tmp_path / "repo"
