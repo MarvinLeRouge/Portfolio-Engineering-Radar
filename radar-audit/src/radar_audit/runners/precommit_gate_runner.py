@@ -58,7 +58,14 @@ class PreCommitGateRunner:
             for hook in repo.get("hooks", []) or []:
                 hook_id = hook.get("id")
                 if hook_id:
-                    entries.append({"id": hook_id, "files": hook.get("files")})
+                    entries.append(
+                        {
+                            "id": hook_id,
+                            "files": hook.get("files"),
+                            "name": hook.get("name"),
+                            "entry": hook.get("entry"),
+                        }
+                    )
         return entries
 
     def _parse_husky(self, target_path: Path, husky_dir: Path) -> list[dict[str, str | None]]:
