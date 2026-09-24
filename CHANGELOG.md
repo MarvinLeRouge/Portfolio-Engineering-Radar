@@ -129,6 +129,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude note-level diagnostics from type-check flagged files
 - *(radar-audit)* Capture name and entry fields in precommit config parsing
 - *(radar-audit)* Classify precommit hooks by keyword match, not exact id
+- *(radar-audit)* Prefer exact hook id match and use word-boundary keyword search
 
 ### 🚜 Refactor
 

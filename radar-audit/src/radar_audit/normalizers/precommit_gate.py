@@ -1,6 +1,8 @@
 # src/radar_audit/normalizers/precommit_gate.py
 from __future__ import annotations
 
+import re
+
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -135,7 +137,11 @@ def _classify_entry(entry: dict[str, str | None]) -> list[tuple[str, str]]:
     hook_id = entry.get("id")
     if not isinstance(hook_id, str):
         return []
-    keyword = _match_classification_keyword(hook_id, entry.get("name"), entry.get("entry"))
+    keyword = (
+        hook_id
+        if hook_id in _HOOK_ID_CLASSIFICATION
+        else _match_classification_keyword(hook_id, entry.get("name"), entry.get("entry"))
+    )
     if keyword is None:
         return []
     validator_type, default_domain = _HOOK_ID_CLASSIFICATION[keyword]
@@ -161,6 +167,6 @@ def _match_classification_keyword(*values: str | None) -> str | None:
     # requiring the match to land in any one specific field.
     haystack = " ".join(value.lower() for value in values if isinstance(value, str))
     for keyword in _CLASSIFICATION_KEYWORDS_BY_LENGTH:
-        if keyword in haystack:
+        if re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", haystack):
             return keyword
     return None

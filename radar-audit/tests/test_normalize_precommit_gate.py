@@ -352,3 +352,96 @@ def test_longer_keyword_wins_over_shorter_substring_keyword(db_session):
         "No pre-commit lint hook covers backend",
         "No pre-commit type-check hook covers backend",
     }
+
+
+def test_exact_id_match_wins_over_longer_keyword_found_in_name_or_entry(db_session):
+    # A hook whose id is already an exact classification key must keep its
+    # old classification even when name/entry happen to mention a longer,
+    # differently-classified keyword (e.g. a combined eslint+prettier hook
+    # still named/id'd "eslint") -- the exact id is authoritative.
+    audit, scoring_run, criterion = _setup(db_session)
+    frontend_evidence = _stack_evidence(audit.id, "tsc", "frontend")
+    gate = _gate_result(
+        audit.id,
+        "pre-commit",
+        [
+            {
+                "id": "eslint",
+                "files": None,
+                "name": "eslint (prettier-aware)",
+                "entry": "npx eslint . && npx prettier --check .",
+            }
+        ],
+    )
+    db_session.add_all([frontend_evidence, gate])
+    db_session.commit()
+
+    score = normalize_precommit_gate(db_session, scoring_run, criterion, [frontend_evidence, gate])
+
+    assert score is not None
+    assert score.value == pytest.approx(10 / 3)
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert {f.description for f in findings} == {
+        "No pre-commit format hook covers frontend",
+        "No pre-commit type-check hook covers frontend",
+    }
+
+
+def test_unrelated_hook_names_containing_a_keyword_substring_are_not_misclassified(db_session):
+    # trufflehog (a real, common secrets-scanning pre-commit hook) contains
+    # "ruff" as a substring; a hook mentioning tsconfig.json contains "tsc".
+    # Neither is the tool the substring suggests -- word-boundary matching
+    # must reject both.
+    audit, scoring_run, criterion = _setup(db_session)
+    backend_evidence = _stack_evidence(audit.id, "ruff-check", "backend")
+    gate = _gate_result(
+        audit.id,
+        "pre-commit",
+        [
+            {"id": "trufflehog", "files": None, "name": None, "entry": "trufflehog filesystem ."},
+            {
+                "id": "check-tsconfig",
+                "files": None,
+                "name": None,
+                "entry": "node scripts/check-tsconfig.js",
+            },
+        ],
+    )
+    db_session.add_all([backend_evidence, gate])
+    db_session.commit()
+
+    score = normalize_precommit_gate(db_session, scoring_run, criterion, [backend_evidence, gate])
+
+    assert score is not None
+    assert score.value == 0.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 3
+
+
+def test_straddling_bonus_applies_to_descriptive_pint_hook_id(db_session):
+    # Pins the _STRADDLING_VALIDATOR_TYPES.get(hook_id) -> .get(keyword)
+    # change: a descriptively-named Pint hook must still get both the lint
+    # and format cells, not just the one its literal id would have hit
+    # under the old exact-match lookup.
+    audit, scoring_run, criterion = _setup(db_session)
+    backend_evidence = _stack_evidence(audit.id, "phpstan", "backend")
+    gate = _gate_result(
+        audit.id, "pre-commit", [{"id": "pint-backend", "files": None, "name": None, "entry": None}]
+    )
+    db_session.add_all([backend_evidence, gate])
+    db_session.commit()
+
+    score = normalize_precommit_gate(db_session, scoring_run, criterion, [backend_evidence, gate])
+
+    assert score is not None
+    assert score.value == pytest.approx(2 / 3 * 10)
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].description == "No pre-commit type-check hook covers backend"
