@@ -57,7 +57,8 @@ def test_excludes_docs_directory_from_the_scan(tmp_path):
     init_git_repo(
         repo_path,
         files={
-            "src/a.js": _UNIQUE_A,
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
             "docs/superpowers/plans/a.js": _DUPLICATE_A,
             "docs/superpowers/plans/b.js": _DUPLICATE_B,
         },
@@ -66,6 +67,7 @@ def test_excludes_docs_directory_from_the_scan(tmp_path):
     runner = JscpdRunner()
     result = runner.run(repo_path, exclude_paths=[])
 
+    assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
         d["secondFile"]["name"] for d in result.raw_output["duplicates"]
     }
@@ -93,7 +95,8 @@ def test_excludes_dot_directories_from_the_scan(tmp_path):
     init_git_repo(
         repo_path,
         files={
-            "src/a.js": _UNIQUE_A,
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
             ".venv/lib/a.js": _DUPLICATE_A,
             ".venv/lib/b.js": _DUPLICATE_B,
         },
@@ -102,10 +105,30 @@ def test_excludes_dot_directories_from_the_scan(tmp_path):
     runner = JscpdRunner()
     result = runner.run(repo_path, exclude_paths=[])
 
+    assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
         d["secondFile"]["name"] for d in result.raw_output["duplicates"]
     }
     assert all(".venv" not in name for name in duplicate_files)
+
+
+def test_still_detects_duplicates_when_target_repo_is_nested_under_a_dot_or_docs_ancestor(
+    tmp_path,
+):
+    repo_path = tmp_path / ".hidden" / "docs" / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    assert result.raw_output["statistics"]["total"]["sources"] >= 2
 
 
 def test_does_not_exclude_a_regular_directory_that_is_not_dot_prefixed(tmp_path):
