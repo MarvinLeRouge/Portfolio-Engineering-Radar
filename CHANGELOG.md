@@ -193,6 +193,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit subproject-scope-leaks implementation plan
 - Write radar-audit mypy-cwd-and-severity implementation plan
 - Write radar-audit precommit-hook-matching implementation plan
+- Write radar-audit jscpd-exclusions implementation plan
 
 ### 🧪 Testing
 
