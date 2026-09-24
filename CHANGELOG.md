@@ -123,6 +123,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Stop scoring gitleaks as clean when git history is unreadable
 - *(radar-audit)* Exclude sibling subprojects nested under each run's target path
 - *(radar-audit)* Hardcode node_modules/dist/build exclusion in EslintComplexityRunner
+- *(radar-audit)* Skip htmlcov/ generated-artifact directories in StaticLocRunner
 
 ### 🚜 Refactor
 

@@ -42,6 +42,27 @@ def test_skips_vendor_and_node_modules_directories(tmp_path):
     assert set(files) == {str(repo_path / "src" / "a.js")}
 
 
+def test_skips_htmlcov_directory_but_not_files_merely_named_htmlcov(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": "line\n",
+            "htmlcov/coverage_html_cb_6fb7b396.js": "line one\nline two\n",
+            "src/htmlcov_report.js": "line\n",
+        },
+    )
+
+    runner = StaticLocRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    files = result.raw_output["files"]
+    assert set(files) == {
+        str(repo_path / "src" / "a.js"),
+        str(repo_path / "src" / "htmlcov_report.js"),
+    }
+
+
 def test_reports_tool_identity():
     runner = StaticLocRunner()
 
