@@ -62,7 +62,12 @@ def _score_diagnostics_tool(
 ) -> tuple[int, int]:
     applicable = tool_result.raw_output.get("total_files", 0)
     diagnostics = tool_result.raw_output.get("diagnostics", [])
-    flagged_files = {d["file"] for d in diagnostics}
+    # Blacklist "note" rather than whitelist "error": mypy diagnostics carry
+    # a "severity" key ("error"/"note"/"warning"), but tsc diagnostics
+    # (typescript_runner.py's regex parser) never populate that key at all
+    # since every line it captures is already a real error. Whitelisting
+    # "error" would silently zero out every tsc diagnostic instead.
+    flagged_files = {d["file"] for d in diagnostics if d.get("severity") != "note"}
     for diagnostic in diagnostics:
         _add_finding(
             session,

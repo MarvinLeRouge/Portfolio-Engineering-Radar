@@ -125,6 +125,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Hardcode node_modules/dist/build exclusion in EslintComplexityRunner
 - *(radar-audit)* Skip htmlcov/ generated-artifact directories in StaticLocRunner
 - *(radar-audit)* Scope subproject exclusions to subproject-scoped runs only
+- *(radar-audit)* Pin MypyRunner subprocess cwd to target_path
+- *(radar-audit)* Exclude note-level diagnostics from type-check flagged files
 
 ### 🚜 Refactor
 
@@ -185,6 +187,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit category 4 (security) implementation plan
 - Mark category 4 (security) complete in roadmap
 - Write radar-audit subproject-scope-leaks implementation plan
+- Write radar-audit mypy-cwd-and-severity implementation plan
 
 ### 🧪 Testing
 

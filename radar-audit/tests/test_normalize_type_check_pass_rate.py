@@ -81,3 +81,83 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_type_check_pass_rate(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_note_only_diagnostic_does_not_lower_score(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="mypy",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "diagnostics": [
+                {"file": "a.py", "severity": "note", "message": "See config-resolution docs"}
+            ],
+            "total_files": 1,
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_type_check_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 10.0
+
+
+def test_error_diagnostic_still_lowers_score(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="mypy",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "diagnostics": [{"file": "a.py", "severity": "error", "message": "Incompatible types"}],
+            "total_files": 1,
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_type_check_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 0.0
+
+
+def test_tsc_diagnostic_without_severity_key_still_lowers_score(db_session):
+    # tsc diagnostics (typescript_runner.py's regex parser) never populate a
+    # "severity" key at all -- every line it captures is already a real
+    # "error TSxxxx" line. The note-level filter must not treat a missing
+    # key as "safe to ignore", or tsc scoring would silently break.
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="tsc",
+        tool_version="1.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={
+            "diagnostics": [
+                {"file": "a.ts", "line": 1, "column": 1, "code": "TS2322", "message": "Type error"}
+            ],
+            "total_files": 1,
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_type_check_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 0.0
