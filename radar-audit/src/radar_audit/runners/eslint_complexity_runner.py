@@ -12,6 +12,7 @@ from radar_audit.runner import RawToolOutput
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
 _COMPLEXITY_PATTERN = re.compile(r"complexity of (\d+)")
+_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "dist", "build")
 
 
 class EslintComplexityRunner:
@@ -42,6 +43,8 @@ class EslintComplexityRunner:
                 "--format",
                 "json",
             ]
+            for name in _ALWAYS_EXCLUDED_DIRNAMES:
+                command.extend(["--ignore-pattern", f"**/{name}/**"])
             for excluded in exclude_paths:
                 try:
                     relative = excluded.relative_to(target_path)

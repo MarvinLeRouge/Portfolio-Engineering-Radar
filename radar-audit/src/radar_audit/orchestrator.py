@@ -105,6 +105,24 @@ def _is_excluded(path: Path, exclude_paths: list[Path]) -> bool:
     return any(resolved == excluded or excluded in resolved.parents for excluded in exclude_paths)
 
 
+def _subproject_exclusions(target_path: Path, subprojects: list[SubProject]) -> list[Path]:
+    """Every other subproject's path nested under `target_path`, so a runner scoped at
+    `target_path` doesn't walk into a sibling subproject's files (e.g. a repo-root-scoped
+    JS runner walking into a nested backend/ Python subproject). Never excludes
+    `target_path` itself, even when another subproject shares that exact path (a
+    colocated multi-stack subproject at the same physical directory).
+    """
+    resolved_target = target_path.resolve()
+    exclusions: list[Path] = []
+    for subproject in subprojects:
+        resolved_subproject = subproject.path.resolve()
+        if resolved_subproject == resolved_target:
+            continue
+        if resolved_target in resolved_subproject.parents:
+            exclusions.append(resolved_subproject)
+    return exclusions
+
+
 @dataclass(frozen=True)
 class PlannedRun:
     target_path: Path
@@ -165,7 +183,13 @@ def execute_audit(
         session.delete(result)
 
     for run in planned_runs(plan, runners):
-        raw = _run_tool_safely(run.runner, run.target_path, plan.exclude_paths)
+        if run.runner.scope == "subproject":
+            run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
+                run.target_path, plan.subprojects
+            )
+        else:
+            run_exclude_paths = plan.exclude_paths
+        raw = _run_tool_safely(run.runner, run.target_path, run_exclude_paths)
         session.add(
             ToolResult(
                 audit_id=audit.id,

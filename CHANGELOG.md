@@ -121,6 +121,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Mark severity bands provisional in criterion 4.2 normalizer
 - *(radar-audit)* Stop scoring failed security tool runs as clean
 - *(radar-audit)* Stop scoring gitleaks as clean when git history is unreadable
+- *(radar-audit)* Exclude sibling subprojects nested under each run's target path
+- *(radar-audit)* Hardcode node_modules/dist/build exclusion in EslintComplexityRunner
+- *(radar-audit)* Skip htmlcov/ generated-artifact directories in StaticLocRunner
+- *(radar-audit)* Scope subproject exclusions to subproject-scoped runs only
 
 ### 🚜 Refactor
 

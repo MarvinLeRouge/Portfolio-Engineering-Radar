@@ -7,7 +7,7 @@ from typing import Literal
 from radar_audit.runner import RawToolOutput
 
 _SOURCE_EXTENSIONS = {".js", ".ts", ".jsx", ".tsx", ".vue", ".php"}
-_SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
+_SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__", "htmlcov"}
 
 
 class StaticLocRunner:

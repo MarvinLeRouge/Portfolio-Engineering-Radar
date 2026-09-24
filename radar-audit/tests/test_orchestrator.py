@@ -347,3 +347,84 @@ def test_execute_audit_runs_multi_stack_runner_once_per_colocated_stacks(db_sess
     results = db_session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
     assert len(results) == 1
     assert results[0].tool_name == "stub-runner"
+
+
+class _RecordingRunner:
+    tool_name = "recording-stub"
+    tool_version = "0.0.1"
+    supported_stacks: frozenset[str] = frozenset({"python", "javascript"})
+    scope = "subproject"
+    timeout_s = 10
+
+    def __init__(self):
+        self.calls: list[tuple] = []
+
+    def run(self, target_path, exclude_paths):
+        self.calls.append((target_path, list(exclude_paths)))
+        return RawToolOutput(command="stub", raw_output={"ok": True}, exit_code=0, duration_ms=1)
+
+
+def test_execute_audit_excludes_sibling_subproject_nested_under_target_path(db_session, tmp_path):
+    # JS subproject at repo root, Python subproject nested at backend/ -- mirrors
+    # GeoChallenge-Tracker's real layout (finding #9).
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"package.json": "{}\n", "backend/pyproject.toml": "[project]\nname='x'\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    runner = _RecordingRunner()
+
+    execute_audit(db_session, config, "repo", [runner])
+
+    backend_path = (repo_path / "backend").resolve()
+    root_path = repo_path.resolve()
+    root_call = next(c for c in runner.calls if c[0] == root_path)
+    backend_call = next(c for c in runner.calls if c[0] == backend_path)
+
+    # The root-scoped run must exclude the nested backend/ subproject.
+    assert backend_path in root_call[1]
+    # The backend-scoped run must NOT exclude its own ancestor (the repo root).
+    assert root_path not in backend_call[1]
+
+
+def test_execute_audit_does_not_exclude_colocated_same_path_subprojects(db_session, tmp_path):
+    # PHP + JS manifests at the same physical path must not cause that path to
+    # exclude itself.
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"package.json": "{}\n", "composer.json": "{}\n"})
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    runner = _RecordingRunner()
+
+    execute_audit(db_session, config, "repo", [runner])
+
+    root_path = repo_path.resolve()
+    (call_target, call_excludes) = runner.calls[0]
+    assert call_target == root_path
+    assert root_path not in call_excludes
+
+
+class _RepoScopeRecordingRunner(_RecordingRunner):
+    tool_name = "repo-scope-recording-stub"
+    scope = "repo"
+
+
+def test_execute_audit_does_not_exclude_subprojects_for_repo_scope_runner(db_session, tmp_path):
+    # A repo-scoped runner (e.g. semgrep, hadolint) must see the whole repo,
+    # including nested subprojects -- only subproject-scoped runners get
+    # `_subproject_exclusions` applied.
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"package.json": "{}\n", "backend/pyproject.toml": "[project]\nname='x'\n"},
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    runner = _RepoScopeRecordingRunner()
+
+    execute_audit(db_session, config, "repo", [runner])
+
+    backend_path = (repo_path / "backend").resolve()
+    assert len(runner.calls) == 1
+    (call_target, call_excludes) = runner.calls[0]
+    assert call_target == repo_path.resolve()
+    assert backend_path not in call_excludes
