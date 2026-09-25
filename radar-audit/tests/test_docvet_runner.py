@@ -60,6 +60,43 @@ def test_excludes_paths_passed_via_exclude_paths(tmp_path):
     assert not any("excluded" in f["file"] for f in findings)
 
 
+def test_excludes_nested_paths_more_than_one_level_deep(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.py": _FULLY_DOCUMENTED_MODULE,
+            "src/apps/web/lib/y.py": _PARTIALLY_DOCUMENTED_MODULE,
+        },
+    )
+
+    runner = DocvetRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[repo_path / "src" / "apps" / "web"])
+
+    assert result.raw_output["presence_coverage"]["percentage"] == 100.0
+    findings = result.raw_output.get("findings", [])
+    assert not any("apps/web" in f["file"] for f in findings)
+
+
+def test_keeps_docvet_default_exclusion_of_tests_and_scripts(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.py": _FULLY_DOCUMENTED_MODULE,
+            "src/tests/test_a.py": _PARTIALLY_DOCUMENTED_MODULE,
+            "src/scripts/tool.py": _PARTIALLY_DOCUMENTED_MODULE,
+            "src/excluded/b.py": _PARTIALLY_DOCUMENTED_MODULE,
+        },
+    )
+
+    runner = DocvetRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[repo_path / "src" / "excluded"])
+
+    assert result.raw_output["presence_coverage"]["percentage"] == 100.0
+    assert result.raw_output.get("findings", []) == []
+
+
 def test_falls_back_to_stdout_when_no_python_files_remain(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(repo_path, files={"src/a.py": _FULLY_DOCUMENTED_MODULE})
