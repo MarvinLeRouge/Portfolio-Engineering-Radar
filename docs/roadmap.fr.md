@@ -64,9 +64,15 @@ Suit l'avancement phase par phase. Les cases sont mises à jour au fur et
     - [x] Catégorie 1 — Architecture & conception : dependency-cruiser + pydeps, présence DESIGN.md/ARCHITECTURE.md/ADR, taille des modules via radon + comptage statique de lignes
     - [x] Catégorie 2 — Qualité du code : taux de réussite du lint, taux de réussite du type-check, complexité cyclomatique, gate pre-commit, duplication de code
     - [x] Catégorie 3 — Tests & fiabilité : taux de réussite des tests unitaires, tests d'intégration, exécution des tests en CI, présence de tests E2E
-    - [ ] Catégories 4 à 15 (Sécurité, Maintenabilité, Performance, DevOps/CI-CD, Documentation, Observabilité/opérations, API/UX/qualité produit, Gestion des dépendances, Gestion de la configuration, Qualité des données, Expérience développeur, Dette technique)
-- [ ] Implémenter le dashboard local (backend + frontend)
-- [ ] Implémenter la génération de rapports (global + par dépôt)
+    - [x] Catégorie 4 — Sécurité : vulnérabilités des dépendances (pip-audit/pnpm audit/Composer audit), secrets dans l'historique git (Gitleaks), findings SAST (Semgrep), vulnérabilités des images de conteneurs (Trivy), durcissement des Dockerfiles (Hadolint)
+    - [x] Catégorie 5 — Maintenabilité : points chauds de complexité (réutilise les runners de complexité de la catégorie 2), code mort / exports inutilisés (Vulture, Knip, PHPMD unusedcode), documentation dans le code (docvet, phpdoc-checker ; JS/TS est en N/A permanent, aucun outil candidat)
+    - [ ] Catégories 6 à 15 (Performance, DevOps/CI-CD, Documentation, Observabilité/opérations, API/UX/qualité produit, Gestion des dépendances, Gestion de la configuration, Qualité des données, Expérience développeur, Dette technique)
+- [ ] Pipeline de reporting et de publication (voir `docs/work-in-progress/reporting-pipeline-notes.md` pour le détail, les dépendances et l'outillage)
+  - [ ] A. Étendre le contrat de rapport pour rendre les Findings, Evidence et Recommendations (aujourd'hui seuls les Scores sont rendus) ; adopter un modèle explicite à trois états par critère (noté / non applicable avec motif / pas encore audité), en réutilisant le champ `Score.na_reason` existant et le vocabulaire `FindingSeverity` plutôt que d'inventer de nouveaux statuts
+  - [ ] B. Alimenter les enregistrements `Recommendation` à partir des findings, pour que les axes d'amélioration soient des données stockées alimentant le rapport, et non seulement du texte de rapport
+  - [ ] C. Construire un `radar-api` minimal (FastAPI) : endpoints de lecture sur le modèle de données existant, plus des endpoints d'écriture étroits, réservés aux confirmations humaines ; c'est lui qui héberge toutes les données de rapport/finding/recommandation — jamais écrites dans les dépôts audités
+  - [ ] D. Ajouter un badge d'évaluation qualité (badge de type endpoint shields.io) que les dépôts audités peuvent lier depuis leur README, pointant vers la page de rapport hébergée par Radar
+  - [ ] E. Construire le `radar-dashboard` complet (SPA Vue 3 + Vite) : jauges de score en bandes de couleur plates et discrètes (réutilisant la palette à 5 niveaux de `FindingSeverity`, pas un dégradé continu) pour un rendu sérieux et non gadget ; critères N/A et pas encore audités affichés grisés avec le motif visible
 
 ## Phase 5 — Audit complet du portfolio
 

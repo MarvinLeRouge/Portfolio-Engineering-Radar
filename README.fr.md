@@ -130,7 +130,7 @@ La méthodologie doit être établie avant le premier audit complet du portfolio
 
 **Phase 4 : implémentation du système, en cours.**
 
-Le modèle de données (`radar-core`) et le moteur d'orchestration/normalisation des outils (`radar-audit`) sont implémentés et en développement actif. `radar-audit` couvre actuellement les catégories 1 (Architecture & conception), 2 (Qualité du code) et 3 (Tests & fiabilité) du Quality Framework ; les catégories restantes, le dashboard local et la génération de rapports restent à faire. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
+Le modèle de données (`radar-core`) et le moteur d'orchestration/normalisation des outils (`radar-audit`) sont implémentés et en développement actif. `radar-audit` couvre actuellement les catégories 1 (Architecture & conception), 2 (Qualité du code), 3 (Tests & fiabilité), 4 (Sécurité) et 5 (Maintenabilité) du Quality Framework ; les catégories restantes ainsi que le pipeline de reporting/publication (rendu des findings et recommandations, API minimale, badge d'évaluation qualité, dashboard local) restent à faire. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
 
 ## Documentation
 

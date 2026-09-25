@@ -130,7 +130,7 @@ The methodology must be established before the first full portfolio assessment.
 
 **Phase 4: system implementation, in progress.**
 
-The data model (`radar-core`) and the tool orchestration/normalization engine (`radar-audit`) are implemented and under active development. `radar-audit` currently covers Quality Framework categories 1 (Architecture & design), 2 (Code quality), and 3 (Testing & reliability); the remaining categories, the local dashboard, and report generation are still to come. See `docs/roadmap.md` for the detailed, up-to-date status.
+The data model (`radar-core`) and the tool orchestration/normalization engine (`radar-audit`) are implemented and under active development. `radar-audit` currently covers Quality Framework categories 1 (Architecture & design), 2 (Code quality), 3 (Testing & reliability), 4 (Security), and 5 (Maintainability); the remaining categories, the reporting/publication pipeline (findings and recommendations rendering, a minimal API, a quality-assessment badge, and the local dashboard), are still to come. See `docs/roadmap.md` for the detailed, up-to-date status.
 
 ## Documentation
 

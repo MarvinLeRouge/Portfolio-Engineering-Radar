@@ -64,9 +64,14 @@ advances.
     - [x] Category 2 — Code quality: lint pass rate, type-check pass rate, cyclomatic complexity, pre-commit gate, code duplication
     - [x] Category 3 — Testing & reliability: unit test pass rate, integration tests, CI test execution, E2E test presence
     - [x] Category 4 — Security: dependency vulnerabilities (pip-audit/pnpm audit/Composer audit), secrets in git history (Gitleaks), SAST findings (Semgrep), container image vulnerabilities (Trivy), Dockerfile hardening (Hadolint)
-    - [ ] Categories 5-15 (Maintainability, Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
-- [ ] Implement the local dashboard (backend + frontend)
-- [ ] Implement report generation (global + per-repository)
+    - [x] Category 5 — Maintainability: complexity hotspots (reuses the category 2 complexity runners), dead code / unused exports (Vulture, Knip, PHPMD unusedcode), documentation-in-code (docvet, phpdoc-checker; JS/TS is a permanent N/A, no candidate tool)
+    - [ ] Categories 6-15 (Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
+- [ ] Reporting and publication pipeline (see `docs/work-in-progress/reporting-pipeline-notes.md` for the detailed breakdown, dependencies, and tooling)
+  - [ ] A. Extend the report contract to render Findings, Evidence, and Recommendations (today it only renders Scores); adopt an explicit three-state model per criterion (scored / not applicable with reason / not yet audited), reusing the existing `Score.na_reason` field and `FindingSeverity` vocabulary rather than inventing new statuses
+  - [ ] B. Populate `Recommendation` records from findings, so improvement axes are stored data feeding the report, not just report prose
+  - [ ] C. Build a minimal `radar-api` (FastAPI): read endpoints over the existing data model, plus narrow human-confirmed-only write endpoints; this is what hosts all report/finding/recommendation data — never written into audited repos
+  - [ ] D. Add a quality-assessment badge (shields.io-style endpoint badge) that audited repos can link from their README, pointing at the radar-hosted report page
+  - [ ] E. Build the full `radar-dashboard` (Vue 3 + Vite SPA): score gauges as discrete flat-color bands (reusing the `FindingSeverity` 5-tier palette, not a continuous gradient) for a professional, non-gimmicky look; N/A and not-yet-audited criteria rendered grayed out with the reason surfaced
 
 ## Phase 5 — Full portfolio audit
 
