@@ -9,16 +9,19 @@ from sqlmodel import Session
 
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
+from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
 from radar_audit.normalizers.container_image_vulnerabilities import (
     normalize_container_image_vulnerabilities,
 )
 from radar_audit.normalizers.cyclomatic_complexity import normalize_cyclomatic_complexity
+from radar_audit.normalizers.dead_code import normalize_dead_code
 from radar_audit.normalizers.dependency_circularity import normalize_dependency_circularity
 from radar_audit.normalizers.dependency_vulnerabilities import (
     normalize_dependency_vulnerabilities,
 )
 from radar_audit.normalizers.design_doc import normalize_design_doc
 from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
+from radar_audit.normalizers.docstring_coverage import normalize_docstring_coverage
 from radar_audit.normalizers.e2e_tests import normalize_e2e_tests
 from radar_audit.normalizers.integration_tests import normalize_integration_tests
 from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
@@ -43,6 +46,12 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Code quality", "Cyclomatic complexity"): normalize_cyclomatic_complexity,
     ("Code quality", "Pre-commit quality gate"): normalize_precommit_gate,
     ("Code quality", "Code duplication"): normalize_code_duplication,
+    ("Maintainability", "Complexity hotspots"): normalize_complexity_hotspots,
+    ("Maintainability", "Dead code / unused exports"): normalize_dead_code,
+    (
+        "Maintainability",
+        "Documentation-in-code (docstring/comment coverage)",
+    ): normalize_docstring_coverage,
     (
         "Testing & reliability",
         "Unit tests present & passing, with coverage",

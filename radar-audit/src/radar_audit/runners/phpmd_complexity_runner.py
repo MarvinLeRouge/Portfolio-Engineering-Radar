@@ -46,7 +46,7 @@ class PhpmdComplexityRunner:
                 str(scratch / "vendor" / "bin" / "phpmd"),
                 str(target_path),
                 "xml",
-                "codesize",
+                "codesize,unusedcode",
             ]
 
             # Build exclude patterns: always exclude vendor/*, plus any exclude_paths
@@ -78,13 +78,26 @@ class PhpmdComplexityRunner:
         for file_element in root.findall("file"):
             file_name = file_element.get("name")
             for violation in file_element.findall("violation"):
-                match = _COMPLEXITY_PATTERN.search(violation.text or "")
-                if match:
+                ruleset = violation.get("ruleset")
+                if ruleset == "Code Size Rules":
+                    match = _COMPLEXITY_PATTERN.search(violation.text or "")
+                    if match:
+                        violations.append(
+                            {
+                                "ruleset": "codesize",
+                                "file": file_name,
+                                "line": int(violation.get("beginline", 0)),
+                                "complexity": int(match.group(1)),
+                            }
+                        )
+                elif ruleset == "Unused Code Rules":
                     violations.append(
                         {
+                            "ruleset": "unusedcode",
                             "file": file_name,
                             "line": int(violation.get("beginline", 0)),
-                            "complexity": int(match.group(1)),
+                            "rule": violation.get("rule"),
+                            "message": (violation.text or "").strip(),
                         }
                     )
 

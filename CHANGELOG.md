@@ -89,6 +89,14 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Register category 4 runners and normalizers
 - *(radar-audit)* Dispatch dependency audit to npm when package-lock.json is present
 - *(radar-audit)* Dispatch dependency audit to yarn when yarn.lock is present
+- *(radar-audit)* Extend PhpmdComplexityRunner to tag codesize/unusedcode violations
+- *(radar-audit)* Add normalize_complexity_hotspots for criterion 5.1
+- *(radar-audit)* Add VultureRunner for criterion 5.2 (Python dead code)
+- *(radar-audit)* Add KnipRunner for criterion 5.2 (JS dead code)
+- *(radar-audit)* Add normalize_dead_code for criterion 5.2
+- *(radar-audit)* Add DocvetRunner for criterion 5.3 (Python docstring coverage)
+- *(radar-audit)* Add PhpdocCheckerRunner for criterion 5.3 (PHP docblock coverage)
+- *(radar-audit)* Add normalize_docstring_coverage for criterion 5.3
 
 ### 🐛 Bug Fixes
 
@@ -139,6 +147,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Rescue crashed test runs with usable junit data
 - *(radar-audit)* Exclude vendor directory from EslintComplexityRunner
 - *(radar-audit)* Exclude vendor directory from DependencyCruiserRunner
+- *(radar-audit)* Parse real knip duplicates/files shapes and skip unusable knip payloads
+- *(radar-audit)* Honor exclude_paths in KnipRunner and flag missing entry point as unusable
+- *(radar-audit)* Glob nested docvet excludes and keep docvet default excludes
+- *(radar-audit)* Treat complexity fallback payloads as no data instead of a clean score
 
 ### 🚜 Refactor
 
@@ -207,6 +219,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit pytest-coverage-crash-handling implementation plan
 - Write radar-audit eslint-complexity/dependency-cruiser vendor-exclusion implementation plan
 - *(radar-audit)* Fix em dashes and stale comment from final review
+- Write radar-audit category 5 (maintainability) design spec
+- Write radar-audit category 5 (maintainability) implementation plan
 
 ### 🧪 Testing
 
@@ -216,6 +230,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add git fixture helper and migrated db_session fixture
 - *(radar-audit)* Relax test assertion for Ruff 0.16.5 defaults
 - *(radar-audit)* Cover PestRunner fallback when tests directory missing
+- *(radar-audit)* Cover phpdoc-checker fallback payload and align spec with real knip shape
 
 ### ⚙️ Miscellaneous Tasks
 

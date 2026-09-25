@@ -36,7 +36,10 @@ def normalize_cyclomatic_complexity(
     tool_results: list[ToolResult],
 ) -> Score | None:
     relevant = [
-        r for r in tool_results if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+        r
+        for r in tool_results
+        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+        and _has_usable_payload(r)
     ]
     if not relevant:
         return None
@@ -101,6 +104,21 @@ def _confidence_for_tool(tool_name: str) -> Confidence:
     return Confidence.HIGH if tool_name == "radon-cc" else Confidence.MEDIUM
 
 
+def _has_usable_payload(tool_result: ToolResult) -> bool:
+    """Tell a real tool payload apart from a runner's fallback payload.
+
+    A payload with its data key present but empty is a real, clean run. A
+    fallback payload (unparsable output, e.g. an npx fetch failure) carries
+    raw stdout instead, and must count as no data rather than as zero blocks.
+    """
+    raw_output = tool_result.raw_output
+    if tool_result.tool_name == "radon-cc":
+        return not {"stdout", "stderr"} <= raw_output.keys()
+    if tool_result.tool_name == "eslint-complexity":
+        return "complexities" in raw_output
+    return "violations" in raw_output and "stdout" not in raw_output
+
+
 def _extract_blocks(tool_result: ToolResult) -> list[dict[str, Any]]:
     if tool_result.tool_name == "radon-cc":
         blocks = []
@@ -123,4 +141,5 @@ def _extract_blocks(tool_result: ToolResult) -> list[dict[str, Any]]:
     return [
         {"complexity": v["complexity"], "name": None, "file": v["file"], "line": v["line"]}
         for v in tool_result.raw_output.get("violations", [])
+        if v.get("ruleset") == "codesize"
     ]
