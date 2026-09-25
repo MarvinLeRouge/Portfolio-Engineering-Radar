@@ -21,6 +21,10 @@ _LINE_PATTERN = re.compile(
     r"^(?P<file>.+):(?P<line>\d+): unused (?P<kind>\S+) '(?P<name>[^']+)' "
     r"\((?P<confidence>\d+)% confidence\)$"
 )
+_UNREACHABLE_CODE_PATTERN = re.compile(
+    r"^(?P<file>.+):(?P<line>\d+): unreachable code after '(?P<after>[^']+)' "
+    r"\((?P<confidence>\d+)% confidence\)$"
+)
 
 
 class VultureRunner:
@@ -51,7 +55,8 @@ class VultureRunner:
 
         findings = []
         for line in completed.stdout.splitlines():
-            match = _LINE_PATTERN.match(line.strip())
+            stripped = line.strip()
+            match = _LINE_PATTERN.match(stripped)
             if match:
                 findings.append(
                     {
@@ -60,6 +65,18 @@ class VultureRunner:
                         "kind": match.group("kind"),
                         "name": match.group("name"),
                         "confidence": int(match.group("confidence")),
+                    }
+                )
+                continue
+            unreachable_match = _UNREACHABLE_CODE_PATTERN.match(stripped)
+            if unreachable_match:
+                findings.append(
+                    {
+                        "file": unreachable_match.group("file"),
+                        "line": int(unreachable_match.group("line")),
+                        "kind": "unreachable_code",
+                        "name": None,
+                        "confidence": int(unreachable_match.group("confidence")),
                     }
                 )
 
