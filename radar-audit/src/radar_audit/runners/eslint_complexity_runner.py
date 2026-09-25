@@ -12,7 +12,7 @@ from radar_audit.runner import RawToolOutput
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
 _COMPLEXITY_PATTERN = re.compile(r"complexity of (\d+)")
-_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "dist", "build")
+_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build")
 
 
 class EslintComplexityRunner:

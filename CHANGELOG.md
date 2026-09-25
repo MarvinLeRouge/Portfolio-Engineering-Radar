@@ -137,6 +137,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Deduplicate yarn advisories and cover fix_available for pnpm and yarn
 - *(radar-audit)* Install requirements-dev.txt in PytestCoverageRunner
 - *(radar-audit)* Rescue crashed test runs with usable junit data
+- *(radar-audit)* Exclude vendor directory from EslintComplexityRunner
 
 ### 🚜 Refactor
 

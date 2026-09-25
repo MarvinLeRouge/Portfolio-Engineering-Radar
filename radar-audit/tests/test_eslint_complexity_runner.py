@@ -103,6 +103,71 @@ def test_always_excludes_dist_directory_regardless_of_exclude_paths(tmp_path):
 
 
 @pytest.mark.slow
+def test_always_excludes_vendor_directory_regardless_of_exclude_paths(tmp_path):
+    repo_path = tmp_path / "test_repo_for_vendor_check"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _SIMPLE_FUNCTION,
+            "vendor/bundle.js": _COMPLEX_FUNCTION,
+        },
+    )
+    _write_package_json(repo_path)
+
+    runner = EslintComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    complexities = result.raw_output["complexities"]
+    excluded_files = [c["file"] for c in complexities]
+    # bundle.js from vendor/ should be excluded
+    assert not any("bundle.js" in f for f in excluded_files), "vendor/bundle.js should be excluded"
+    # a.js from src/ should still be checked
+    assert any("a.js" in f for f in excluded_files), "src/a.js should not be excluded"
+
+
+@pytest.mark.slow
+def test_always_excludes_a_nested_vendor_directory(tmp_path):
+    repo_path = tmp_path / "test_repo_for_nested_vendor_check"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _SIMPLE_FUNCTION,
+            "backend/vendor/pkg/bundle.js": _COMPLEX_FUNCTION,
+        },
+    )
+    _write_package_json(repo_path)
+
+    runner = EslintComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    complexities = result.raw_output["complexities"]
+    excluded_files = [c["file"] for c in complexities]
+    assert not any(
+        "bundle.js" in f for f in excluded_files
+    ), "backend/vendor/pkg/bundle.js should be excluded"
+    assert any("a.js" in f for f in excluded_files), "src/a.js should not be excluded"
+
+
+@pytest.mark.slow
+def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"vendors-config/a.js": _COMPLEX_FUNCTION},
+    )
+    _write_package_json(repo_path)
+
+    runner = EslintComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    complexities = result.raw_output["complexities"]
+    flagged_files = [c["file"] for c in complexities]
+    assert any(
+        "a.js" in f for f in flagged_files
+    ), "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+
+
+@pytest.mark.slow
 def test_runs_successfully_on_esm_type_targets(tmp_path):
     """Regression test: ensure runner survives targets with package.json "type": "module"."""
     repo_path = tmp_path / "repo"
