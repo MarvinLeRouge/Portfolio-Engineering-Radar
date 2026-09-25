@@ -14,6 +14,7 @@ from radar_audit.normalizers.container_image_vulnerabilities import (
     normalize_container_image_vulnerabilities,
 )
 from radar_audit.normalizers.cyclomatic_complexity import normalize_cyclomatic_complexity
+from radar_audit.normalizers.dead_code import normalize_dead_code
 from radar_audit.normalizers.dependency_circularity import normalize_dependency_circularity
 from radar_audit.normalizers.dependency_vulnerabilities import (
     normalize_dependency_vulnerabilities,
@@ -45,6 +46,7 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Code quality", "Pre-commit quality gate"): normalize_precommit_gate,
     ("Code quality", "Code duplication"): normalize_code_duplication,
     ("Maintainability", "Complexity hotspots"): normalize_complexity_hotspots,
+    ("Maintainability", "Dead code / unused exports"): normalize_dead_code,
     (
         "Testing & reliability",
         "Unit tests present & passing, with coverage",

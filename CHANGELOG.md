@@ -93,6 +93,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_complexity_hotspots for criterion 5.1
 - *(radar-audit)* Add VultureRunner for criterion 5.2 (Python dead code)
 - *(radar-audit)* Add KnipRunner for criterion 5.2 (JS dead code)
+- *(radar-audit)* Add normalize_dead_code for criterion 5.2
 
 ### 🐛 Bug Fixes
 
