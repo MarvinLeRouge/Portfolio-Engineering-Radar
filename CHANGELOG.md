@@ -230,6 +230,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add git fixture helper and migrated db_session fixture
 - *(radar-audit)* Relax test assertion for Ruff 0.16.5 defaults
 - *(radar-audit)* Cover PestRunner fallback when tests directory missing
+- *(radar-audit)* Cover phpdoc-checker fallback payload and align spec with real knip shape
 
 ### ⚙️ Miscellaneous Tasks
 

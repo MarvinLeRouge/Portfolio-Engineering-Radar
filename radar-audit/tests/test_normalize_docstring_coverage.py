@@ -260,3 +260,24 @@ def test_returns_none_when_docvet_result_has_no_usable_payload(db_session):
     score = normalize_docstring_coverage(db_session, scoring_run, criterion, [tool_result])
 
     assert score is None
+
+
+def test_returns_none_when_phpdoc_checker_result_has_no_usable_payload(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # JSON-decode-failure fallback shape: no "findings" key.
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="phpdoc-checker",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={"stdout": "PHP Fatal error", "stderr": ""},
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_docstring_coverage(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
