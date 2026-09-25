@@ -40,6 +40,7 @@ from radar_audit.runners.static_loc_runner import StaticLocRunner
 from radar_audit.runners.trivy_image_runner import TrivyImageRunner
 from radar_audit.runners.typescript_runner import TypeScriptRunner
 from radar_audit.runners.vitest_runner import VitestRunner
+from radar_audit.runners.vulture_runner import VultureRunner
 from radar_audit.scoring import NoAuditFoundError, RepositoryNotFoundError, score_repository
 
 app = typer.Typer()
@@ -61,6 +62,7 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     RadonComplexityRunner(),
     EslintComplexityRunner(),
     PhpmdComplexityRunner(),
+    VultureRunner(),
     PreCommitGateRunner(),
     JscpdRunner(),
     PytestCoverageRunner(),
