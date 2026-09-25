@@ -21,6 +21,7 @@ from radar_audit.normalizers.dependency_vulnerabilities import (
 )
 from radar_audit.normalizers.design_doc import normalize_design_doc
 from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
+from radar_audit.normalizers.docstring_coverage import normalize_docstring_coverage
 from radar_audit.normalizers.e2e_tests import normalize_e2e_tests
 from radar_audit.normalizers.integration_tests import normalize_integration_tests
 from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
@@ -47,6 +48,10 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Code quality", "Code duplication"): normalize_code_duplication,
     ("Maintainability", "Complexity hotspots"): normalize_complexity_hotspots,
     ("Maintainability", "Dead code / unused exports"): normalize_dead_code,
+    (
+        "Maintainability",
+        "Documentation-in-code (docstring/comment coverage)",
+    ): normalize_docstring_coverage,
     (
         "Testing & reliability",
         "Unit tests present & passing, with coverage",

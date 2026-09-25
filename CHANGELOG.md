@@ -96,6 +96,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_dead_code for criterion 5.2
 - *(radar-audit)* Add DocvetRunner for criterion 5.3 (Python docstring coverage)
 - *(radar-audit)* Add PhpdocCheckerRunner for criterion 5.3 (PHP docblock coverage)
+- *(radar-audit)* Add normalize_docstring_coverage for criterion 5.3
 
 ### 🐛 Bug Fixes
 
