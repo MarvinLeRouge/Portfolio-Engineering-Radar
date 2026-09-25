@@ -9,6 +9,7 @@ from sqlmodel import Session
 
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
+from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
 from radar_audit.normalizers.container_image_vulnerabilities import (
     normalize_container_image_vulnerabilities,
 )
@@ -43,6 +44,7 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Code quality", "Cyclomatic complexity"): normalize_cyclomatic_complexity,
     ("Code quality", "Pre-commit quality gate"): normalize_precommit_gate,
     ("Code quality", "Code duplication"): normalize_code_duplication,
+    ("Maintainability", "Complexity hotspots"): normalize_complexity_hotspots,
     (
         "Testing & reliability",
         "Unit tests present & passing, with coverage",
