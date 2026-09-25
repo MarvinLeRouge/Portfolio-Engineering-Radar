@@ -13,7 +13,7 @@ from radar_audit.runner import RawToolOutput
 # dependency-cruiser's own default node_modules exclusion, and none of these hold
 # code written by the audited project -- node_modules is vendored, dist/build are
 # compiled/bundled output (e.g. a Vite build under public/build).
-_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "dist", "build")
+_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build")
 
 
 class DependencyCruiserRunner:
