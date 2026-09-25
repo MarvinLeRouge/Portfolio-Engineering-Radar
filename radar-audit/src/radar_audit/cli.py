@@ -25,6 +25,7 @@ from radar_audit.runners.jscpd_runner import JscpdRunner
 from radar_audit.runners.knip_runner import KnipRunner
 from radar_audit.runners.mypy_runner import MypyRunner
 from radar_audit.runners.pest_runner import PestRunner
+from radar_audit.runners.phpdoc_checker_runner import PhpdocCheckerRunner
 from radar_audit.runners.phpmd_complexity_runner import PhpmdComplexityRunner
 from radar_audit.runners.phpstan_runner import PhpstanRunner
 from radar_audit.runners.pint_runner import PintRunner
@@ -69,6 +70,7 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     JscpdRunner(),
     KnipRunner(),
     DocvetRunner(),
+    PhpdocCheckerRunner(),
     PytestCoverageRunner(),
     VitestRunner(),
     PestRunner(),
