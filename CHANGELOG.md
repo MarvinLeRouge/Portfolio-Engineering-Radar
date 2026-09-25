@@ -207,6 +207,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit pytest-coverage-crash-handling implementation plan
 - Write radar-audit eslint-complexity/dependency-cruiser vendor-exclusion implementation plan
 - *(radar-audit)* Fix em dashes and stale comment from final review
+- Write radar-audit category 5 (maintainability) design spec
 
 ### 🧪 Testing
 
