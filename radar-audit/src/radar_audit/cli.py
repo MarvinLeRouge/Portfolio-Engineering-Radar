@@ -15,6 +15,7 @@ from radar_audit.runners.ci_workflow_runner import CiWorkflowRunner
 from radar_audit.runners.composer_audit_runner import ComposerAuditRunner
 from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
 from radar_audit.runners.design_doc_runner import DesignDocRunner
+from radar_audit.runners.docvet_runner import DocvetRunner
 from radar_audit.runners.eslint_complexity_runner import EslintComplexityRunner
 from radar_audit.runners.eslint_lint_runner import EslintLintRunner
 from radar_audit.runners.gitleaks_runner import GitleaksRunner
@@ -67,6 +68,7 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     PreCommitGateRunner(),
     JscpdRunner(),
     KnipRunner(),
+    DocvetRunner(),
     PytestCoverageRunner(),
     VitestRunner(),
     PestRunner(),
