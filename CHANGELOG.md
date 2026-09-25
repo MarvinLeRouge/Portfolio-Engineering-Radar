@@ -137,6 +137,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Deduplicate yarn advisories and cover fix_available for pnpm and yarn
 - *(radar-audit)* Install requirements-dev.txt in PytestCoverageRunner
 - *(radar-audit)* Rescue crashed test runs with usable junit data
+- *(radar-audit)* Exclude vendor directory from EslintComplexityRunner
+- *(radar-audit)* Exclude vendor directory from DependencyCruiserRunner
 
 ### 🚜 Refactor
 
@@ -203,6 +205,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Remove em dashes from the jscpd-exclusions plan
 - Write radar-audit dependency-audit lockfile-dispatch implementation plan
 - Write radar-audit pytest-coverage-crash-handling implementation plan
+- Write radar-audit eslint-complexity/dependency-cruiser vendor-exclusion implementation plan
+- *(radar-audit)* Fix em dashes and stale comment from final review
 
 ### 🧪 Testing
 

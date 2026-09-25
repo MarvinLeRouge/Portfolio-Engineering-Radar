@@ -60,6 +60,61 @@ def test_excludes_node_modules_from_the_scan(tmp_path):
     assert all("node_modules" not in m["source"] for m in modules)
 
 
+def test_excludes_vendor_directory_from_the_scan(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": "export const a = 1;\n",
+            "vendor/pkg/a.js": "import { b } from './b.js';\nexport const a = 1;\n",
+            "vendor/pkg/b.js": "import { a } from './a.js';\nexport const b = 1;\n",
+        },
+    )
+
+    runner = DependencyCruiserRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    modules = result.raw_output["modules"]
+    assert all("vendor" not in m["source"] for m in modules)
+
+
+def test_excludes_a_nested_vendor_directory_from_the_scan(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": "export const a = 1;\n",
+            "backend/vendor/pkg/a.js": "import { b } from './b.js';\nexport const a = 1;\n",
+            "backend/vendor/pkg/b.js": "import { a } from './a.js';\nexport const b = 1;\n",
+        },
+    )
+
+    runner = DependencyCruiserRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    modules = result.raw_output["modules"]
+    assert all("vendor" not in m["source"] for m in modules)
+
+
+def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"vendors-config/a.js": "export const a = 1;\n"},
+    )
+
+    runner = DependencyCruiserRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    modules = result.raw_output["modules"]
+    assert any(
+        "vendors-config" in m["source"] for m in modules
+    ), "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+
+
 def test_excludes_compiled_build_output_from_the_scan(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
