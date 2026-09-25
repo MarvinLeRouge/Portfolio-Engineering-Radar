@@ -135,6 +135,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude docs and dot-directories from jscpd scan
 - *(radar-audit)* Anchor jscpd ignore patterns to the target repo path
 - *(radar-audit)* Deduplicate yarn advisories and cover fix_available for pnpm and yarn
+- *(radar-audit)* Install requirements-dev.txt in PytestCoverageRunner
 
 ### 🚜 Refactor
 
