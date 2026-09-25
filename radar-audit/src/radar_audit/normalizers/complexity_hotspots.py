@@ -6,7 +6,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.cyclomatic_complexity import _extract_blocks
+from radar_audit.normalizers.cyclomatic_complexity import _extract_blocks, _has_usable_payload
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "radon-cc": {0},
@@ -25,7 +25,10 @@ def normalize_complexity_hotspots(
     tool_results: list[ToolResult],
 ) -> Score | None:
     relevant = [
-        r for r in tool_results if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+        r
+        for r in tool_results
+        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+        and _has_usable_payload(r)
     ]
     if not relevant:
         return None

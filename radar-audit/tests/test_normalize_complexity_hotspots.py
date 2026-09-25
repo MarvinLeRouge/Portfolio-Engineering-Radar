@@ -224,3 +224,83 @@ def test_creates_no_finding_rows(db_session):
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
     assert findings == []
+
+
+def _tool_result(audit, tool_name, raw_output, exit_code):
+    return ToolResult(
+        audit_id=audit.id,
+        tool_name=tool_name,
+        tool_version="1.0.0",
+        subproject_path="sub",
+        command="stub",
+        raw_output=raw_output,
+        exit_code=exit_code,
+        duration_ms=10,
+    )
+
+
+def test_returns_none_for_eslint_fallback_payload_instead_of_a_perfect_ten(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # npx failure: exit 1 (a usable code for eslint) but no "complexities" key.
+    tool_result = _tool_result(
+        audit, "eslint-complexity", {"stdout": "", "stderr": "npm ERR! network"}, 1
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_complexity_hotspots(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_returns_none_for_radon_fallback_payload(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "radon-cc", {"stdout": "garbage", "stderr": ""}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_complexity_hotspots(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_returns_none_for_phpmd_parse_failure_payload(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "phpmd-codesize", {"violations": [], "stdout": "not xml"}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_complexity_hotspots(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_scores_ten_for_eslint_run_with_empty_complexities(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # Key present but empty: eslint really ran and found no functions.
+    tool_result = _tool_result(audit, "eslint-complexity", {"complexities": []}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_complexity_hotspots(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 10.0
+
+
+def test_unusable_result_does_not_mask_a_usable_one(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    unusable = _tool_result(audit, "eslint-complexity", {"stdout": "", "stderr": ""}, 1)
+    usable = _radon_result(
+        audit,
+        [{"type": "function", "name": f"f{i}", "complexity": 15, "rank": "C"} for i in range(3)],
+    )
+    db_session.add(unusable)
+    db_session.add(usable)
+    db_session.commit()
+
+    score = normalize_complexity_hotspots(db_session, scoring_run, criterion, [unusable, usable])
+
+    assert score is not None
+    assert score.value == 6.0
+    assert score.confidence == Confidence.HIGH

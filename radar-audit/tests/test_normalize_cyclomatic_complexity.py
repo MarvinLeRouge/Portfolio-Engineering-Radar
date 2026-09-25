@@ -210,3 +210,79 @@ def test_ignores_phpmd_codesize_result_with_exit_code_one(db_session):
     score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
 
     assert score is None
+
+
+def _tool_result(audit, tool_name, raw_output, exit_code):
+    return ToolResult(
+        audit_id=audit.id,
+        tool_name=tool_name,
+        tool_version="1.0.0",
+        subproject_path="sub",
+        command="stub",
+        raw_output=raw_output,
+        exit_code=exit_code,
+        duration_ms=10,
+    )
+
+
+def test_returns_none_for_eslint_fallback_payload(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "eslint-complexity", {"stdout": "", "stderr": "x"}, 1)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_returns_none_for_eslint_run_with_empty_complexities(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "eslint-complexity", {"complexities": []}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_returns_none_for_clean_phpmd_result(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "phpmd-codesize", {"violations": []}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_returns_none_for_radon_fallback_payload_without_crashing(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit, "radon-cc", {"stdout": "garbage", "stderr": ""}, 0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_unusable_result_does_not_change_a_usable_radon_score(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    unusable = _tool_result(audit, "eslint-complexity", {"stdout": "", "stderr": ""}, 1)
+    usable = _tool_result(
+        audit,
+        "radon-cc",
+        {"src/a.py": [{"type": "function", "name": "f", "complexity": 15, "lineno": 1}]},
+        0,
+    )
+    db_session.add(unusable)
+    db_session.add(usable)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [unusable, usable])
+
+    assert score is not None
+    assert score.value == 6.0

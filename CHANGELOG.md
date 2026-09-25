@@ -150,6 +150,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Parse real knip duplicates/files shapes and skip unusable knip payloads
 - *(radar-audit)* Honor exclude_paths in KnipRunner and flag missing entry point as unusable
 - *(radar-audit)* Glob nested docvet excludes and keep docvet default excludes
+- *(radar-audit)* Treat complexity fallback payloads as no data instead of a clean score
 
 ### 🚜 Refactor
 
