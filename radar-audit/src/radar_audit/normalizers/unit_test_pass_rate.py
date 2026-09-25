@@ -27,9 +27,18 @@ def normalize_unit_test_pass_rate(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
-    relevant = [
-        r for r in tool_results if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
-    ]
+    relevant = []
+    for r in tool_results:
+        if r.tool_name not in _RELEVANT_TOOLS:
+            continue
+        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL[r.tool_name]:
+            relevant.append(r)
+        elif r.raw_output.get("tests", {}).get("total", 0) > 0:
+            # Crashed or interrupted run (e.g. pytest exit code 2 from
+            # collection errors) whose junit.xml still carries real counts -
+            # rescue it into the ratio instead of silently dropping the
+            # whole suite. The abnormal exit code itself is flagged below.
+            relevant.append(r)
     if not relevant:
         return None
 
@@ -39,6 +48,25 @@ def normalize_unit_test_pass_rate(
         tests = tool_result.raw_output.get("tests", {})
         passed += tests.get("passed", 0)
         collected += tests.get("total", 0)
+
+        if tool_result.exit_code not in _USABLE_EXIT_CODES_BY_TOOL[tool_result.tool_name]:
+            session.add(
+                Finding(
+                    scoring_run_id=scoring_run.id,
+                    criterion_id=criterion.id,
+                    tool_result_id=tool_result.id,
+                    severity=FindingSeverity.HIGH,
+                    description=(
+                        f"{tool_result.tool_name} exited abnormally (exit code "
+                        f"{tool_result.exit_code}) while still reporting "
+                        f"{tests.get('total', 0)} tests "
+                        f"({tests.get('passed', 0)} passed) - treating as a crashed run"
+                    ),
+                    confidence=Confidence.HIGH,
+                    status=FindingStatus.OPEN,
+                    human_verdict=HumanVerdict.UNREVIEWED,
+                )
+            )
 
         for failure in tool_result.raw_output.get("failures", []):
             _add_failure_finding(session, scoring_run, criterion, tool_result, failure)
