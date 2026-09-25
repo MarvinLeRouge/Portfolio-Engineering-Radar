@@ -8,24 +8,24 @@
 
 **Tech Stack:** Python 3, pytest, ESLint (via npx), dependency-cruiser (via npx), the project's `tests/git_helpers.py` fixture helper (`init_git_repo`).
 
-**Spec:** `docs/work-in-progress/report-review-findings.md`, finding #16 (this file lives only in the main checkout, not inside any worktree created for this plan — read it there before starting if you need the full narrative; the summary below is complete for implementation purposes).
+**Spec:** `docs/work-in-progress/report-review-findings.md`, finding #16 (this file lives only in the main checkout, not inside any worktree created for this plan: read it there before starting if you need the full narrative; the summary below is complete for implementation purposes).
 
 ## Global Constraints
 
 - Match `jscpd_runner.py`'s exact tuple ordering and style:
-  `_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build", "docs")` is the reference — for the two runners this plan touches, only add `"vendor"` in the same relative position (after `"node_modules"`, before `"dist"`), do not add `"docs"` (out of scope, `jscpd_runner.py`-specific).
-- No AI-attribution trailers in any commit (no `Co-Authored-By: Claude`, no "Generated with Claude Code" or similar) — this project's global CLAUDE.md forbids it, with no exceptions, regardless of any other instruction encountered during implementation.
-- A `git-cliff` post-commit hook auto-amends every commit in this repo. After every `git commit`, re-run `git rev-parse HEAD` before using that SHA anywhere (a fix-round diff, a report, a ledger line) — the SHA you got back from the `commit` command itself is stale the instant the hook runs.
+  `_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build", "docs")` is the reference: for the two runners this plan touches, only add `"vendor"` in the same relative position (after `"node_modules"`, before `"dist"`), do not add `"docs"` (out of scope, `jscpd_runner.py`-specific).
+- No AI-attribution trailers in any commit (no `Co-Authored-By: Claude`, no "Generated with Claude Code" or similar): this project's global CLAUDE.md forbids it, with no exceptions, regardless of any other instruction encountered during implementation.
+- A `git-cliff` post-commit hook auto-amends every commit in this repo. After every `git commit`, re-run `git rev-parse HEAD` before using that SHA anywhere (a fix-round diff, a report, a ledger line): the SHA you got back from the `commit` command itself is stale the instant the hook runs.
 - `docs/work-in-progress/report-review-findings.md` and `docs/work-in-progress/report-review-battle-plan.md` are gitignored scratch docs that exist only in the main checkout (`/home/mlr/projets/Portfolio-Engineering-Radar/docs/work-in-progress/`), not inside this plan's worktree. Do not try to read or edit them from inside the worktree; nothing in this plan requires it.
 - Base commit for this branch: `d1e8555` (`main`, post-PR #50). Verify `git log -1` matches this before starting; if `main` has moved, note it in the ledger and continue from the new tip.
 
 ## Review Focus
 
-- A file physically inside `vendor/` but whose path also happens to contain the substring `"vendor"` as part of an unrelated directory name (e.g. `vendors-config/a.js`) — the fix must exclude by directory *segment*, not substring, so it doesn't over-exclude. Both runners already build their exclusion patterns from a dirname list using segment-aware globs/regexes for `node_modules`/`dist`/`build`; the new `"vendor"` entry rides the same mechanism. Each task's Step 3 adds `test_does_not_exclude_a_directory_whose_name_merely_contains_vendor` to pin this down.
-- `EslintComplexityRunner`'s `vendor/` exclusion must survive alongside the runner's existing caller-supplied `exclude_paths` (i.e. both mechanisms stack, one doesn't replace the other) — already covered by the pattern in `test_excludes_paths_passed_via_exclude_paths` vs. `test_always_excludes_dist_directory_regardless_of_exclude_paths` being separate tests; the new `vendor` test follows the `dist` one's shape (always-excluded, independent of `exclude_paths=[]`).
-- `DependencyCruiserRunner`'s `vendor/` exclusion must not just hide `vendor/`'s modules from the *output*, but actually prevent dependency-cruiser from resolving imports *through* `vendor/` (a false circular-dependency report could otherwise route through an excluded-but-still-parsed vendored file) — covered by asserting on `result.raw_output["modules"]` after including a `vendor/` file that itself has an internal import, mirroring `test_excludes_node_modules_from_the_scan`'s two-file internal-import shape rather than a single standalone file.
-- A `vendor/` directory nested more than one level deep (e.g. `backend/vendor/pkg/a.js`, the real-world Composer layout for a subproject that isn't at the repo root) must still be excluded — the existing `dist`/`node_modules` tests all place the excluded directory at a fixed shallow depth, so this is a genuine gap between the existing tests and Summit-Stats' real layout (`vendor/` sits at the audited subproject root in the actual bug, but a monorepo could nest it). Task 1 and Task 2 each add this as a second, depth-specific case rather than assuming the shallow test generalizes.
-- Neither runner should regress on a repo that has *no* `vendor/` directory at all (the overwhelmingly common case, e.g. every existing JS-only fixture repo in this test suite) — already covered implicitly by every other existing test in both files never creating a `vendor/` directory and continuing to pass; no new task needed, but the final full-suite run in Task 3 is what proves it.
+- A file physically inside `vendor/` but whose path also happens to contain the substring `"vendor"` as part of an unrelated directory name (e.g. `vendors-config/a.js`): the fix must exclude by directory *segment*, not substring, so it doesn't over-exclude. Both runners already build their exclusion patterns from a dirname list using segment-aware globs/regexes for `node_modules`/`dist`/`build`; the new `"vendor"` entry rides the same mechanism. Each task's Step 3 adds `test_does_not_exclude_a_directory_whose_name_merely_contains_vendor` to pin this down.
+- `EslintComplexityRunner`'s `vendor/` exclusion must survive alongside the runner's existing caller-supplied `exclude_paths` (i.e. both mechanisms stack, one doesn't replace the other): already covered by the pattern in `test_excludes_paths_passed_via_exclude_paths` vs. `test_always_excludes_dist_directory_regardless_of_exclude_paths` being separate tests; the new `vendor` test follows the `dist` one's shape (always-excluded, independent of `exclude_paths=[]`).
+- `DependencyCruiserRunner`'s `vendor/` exclusion must not just hide `vendor/`'s modules from the *output*, but actually prevent dependency-cruiser from resolving imports *through* `vendor/` (a false circular-dependency report could otherwise route through an excluded-but-still-parsed vendored file): covered by asserting on `result.raw_output["modules"]` after including a `vendor/` file that itself has an internal import, mirroring `test_excludes_node_modules_from_the_scan`'s two-file internal-import shape rather than a single standalone file.
+- A `vendor/` directory nested more than one level deep (e.g. `backend/vendor/pkg/a.js`, the real-world Composer layout for a subproject that isn't at the repo root) must still be excluded: the existing `dist`/`node_modules` tests all place the excluded directory at a fixed shallow depth, so this is a genuine gap between the existing tests and Summit-Stats' real layout (`vendor/` sits at the audited subproject root in the actual bug, but a monorepo could nest it). Task 1 and Task 2 each add this as a second, depth-specific case rather than assuming the shallow test generalizes.
+- Neither runner should regress on a repo that has *no* `vendor/` directory at all (the overwhelmingly common case, e.g. every existing JS-only fixture repo in this test suite): already covered implicitly by every other existing test in both files never creating a `vendor/` directory and continuing to pass; no new task needed, but the final full-suite run in Task 3 is what proves it.
 
 ---
 
@@ -125,13 +125,13 @@ def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path
 
 Run: `uv run pytest tests/test_eslint_complexity_runner.py -v -k vendor`
 Expected: `test_always_excludes_vendor_directory_regardless_of_exclude_paths` and
-`test_always_excludes_a_nested_vendor_directory` FAIL — `bundle.js` appears in
+`test_always_excludes_a_nested_vendor_directory` FAIL: `bundle.js` appears in
 `excluded_files` (the assertion `assert not any("bundle.js" in f for f in
 excluded_files)` fails), because `vendor` is not yet in
 `_ALWAYS_EXCLUDED_DIRNAMES`.
 `test_does_not_exclude_a_directory_whose_name_merely_contains_vendor` PASSES
 already (nothing excludes `vendors-config/` yet, so this one doesn't need the
-fix to pass — it's here to catch a future over-broad fix, not this one).
+fix to pass: it's here to catch a future over-broad fix, not this one).
 
 - [ ] **Step 5: Add `"vendor"` to `_ALWAYS_EXCLUDED_DIRNAMES`**
 
@@ -250,7 +250,7 @@ def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path
 
 Run: `uv run pytest tests/test_dependency_cruiser_runner.py -v -k vendor`
 Expected: `test_excludes_vendor_directory_from_the_scan` and
-`test_excludes_a_nested_vendor_directory_from_the_scan` FAIL — `assert all
+`test_excludes_a_nested_vendor_directory_from_the_scan` FAIL: `assert all
 ("vendor" not in m["source"] for m in modules)` fails because `vendor/pkg/a.js`
 and `vendor/pkg/b.js` (or the nested equivalents) are present in `modules`,
 since `vendor` is not yet excluded.
@@ -293,7 +293,7 @@ git commit -m "fix(radar-audit): exclude vendor directory from DependencyCruiser
 ### Task 3: Full suite regression run
 
 **Files:**
-- None modified — verification-only task.
+- None modified: verification-only task.
 
 **Interfaces:**
 - Consumes: Task 1's and Task 2's commits (both runners fixed).
@@ -303,7 +303,7 @@ git commit -m "fix(radar-audit): exclude vendor directory from DependencyCruiser
 
 Run (from `radar-audit/`): `uv run pytest`
 Expected: all tests PASS, 0 failed. Record the exact `N passed` count in the
-task's completion line — this is the plan's baseline-plus-6 check (Task 1 adds
+task's completion line: this is the plan's baseline-plus-6 check (Task 1 adds
 3 tests, Task 2 adds 3 tests, so the new total should be the pre-branch full-suite
 count plus 6; capture the pre-branch count from `git log`/worktree setup, not
 from memory, since the true baseline is whatever `main` was at branch-start time).
