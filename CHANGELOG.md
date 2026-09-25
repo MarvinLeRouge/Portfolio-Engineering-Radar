@@ -205,6 +205,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Remove em dashes from the jscpd-exclusions plan
 - Write radar-audit dependency-audit lockfile-dispatch implementation plan
 - Write radar-audit pytest-coverage-crash-handling implementation plan
+- Write radar-audit eslint-complexity/dependency-cruiser vendor-exclusion implementation plan
 
 ### 🧪 Testing
 
