@@ -71,6 +71,37 @@ def test_reports_tool_identity():
     assert runner.supported_stacks == frozenset({"python"})
 
 
+def test_installs_requirements_dev_txt_when_present(tmp_path):
+    # requirements-dev.txt declares pytest-env, which implements the "env"
+    # pytest.ini option used below. Without it, pytest emits a
+    # PytestConfigWarning for the unrecognized "env" key and never sets
+    # FOO, so the test fails with a KeyError; with it installed, FOO is set
+    # before the test runs and it passes. This mirrors finding #10's real
+    # scenario, where a project's pytest.ini "env" directive silently had
+    # no effect because pytest-env was declared only in requirements-dev.txt.
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "requirements-dev.txt": "pytest-env\n",
+            "pytest.ini": "[pytest]\nenv =\n    FOO=bar\n",
+            "tests/test_env.py": (
+                "import os\n\n\n"
+                "def test_reads_env_var_set_by_pytest_env_plugin():\n"
+                "    assert os.environ['FOO'] == 'bar'\n"
+            ),
+        },
+    )
+
+    runner = PytestCoverageRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    assert result.raw_output["tests"]["total"] == 1
+    assert result.raw_output["tests"]["passed"] == 1
+    assert result.raw_output["tests"]["failed"] == 0
+
+
 def test_fallback_when_junit_xml_not_created(tmp_path):
     """When pytest fails before writing junit.xml, raw_output still conforms to contract."""
     runner = PytestCoverageRunner()

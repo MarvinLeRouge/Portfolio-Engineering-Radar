@@ -1,6 +1,8 @@
+import pytest
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass_rate
 from radar_audit.taxonomy.seed import seed_taxonomy
+from radar_core.enums import FindingSeverity
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
@@ -121,6 +123,87 @@ def test_returns_none_when_zero_tests_collected(db_session):
     score = normalize_unit_test_pass_rate(db_session, scoring_run, criterion, [tool_result])
 
     assert score is None
+
+
+def test_rescues_a_crashed_pytest_run_and_pools_it_with_a_healthy_vitest_run(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    crashed_backend = ToolResult(
+        audit_id=audit.id,
+        tool_name="pytest-cov",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "tests": {"total": 58, "passed": 0, "failed": 58, "skipped": 0},
+            "failures": [{"file": "tests/test_a.py", "name": "test_a", "line": None}],
+            "coverage_percent": None,
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    healthy_frontend = ToolResult(
+        audit_id=audit.id,
+        tool_name="vitest",
+        tool_version="1.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={
+            "tests": {"total": 407, "passed": 407, "failed": 0, "skipped": 0},
+            "failures": [],
+            "coverage_percent": 95.0,
+        },
+        exit_code=0,
+        duration_ms=10,
+    )
+    db_session.add(crashed_backend)
+    db_session.add(healthy_frontend)
+    db_session.commit()
+
+    score = normalize_unit_test_pass_rate(
+        db_session, scoring_run, criterion, [crashed_backend, healthy_frontend]
+    )
+
+    assert score is not None
+    assert score.value == pytest.approx((0 + 407) / (58 + 407) * 10)
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    descriptions = [f.description for f in findings]
+    assert any("Failing test" in d for d in descriptions)
+    crash_findings = [f for f in findings if "exited abnormally" in (f.description or "")]
+    assert len(crash_findings) == 1
+    assert crash_findings[0].severity == FindingSeverity.HIGH
+    assert "exit code 2" in crash_findings[0].description
+    assert "58 tests" in crash_findings[0].description
+
+
+def test_still_excludes_a_crashed_run_that_produced_no_usable_junit_data(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="pytest-cov",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+            "failures": [],
+            "coverage_percent": None,
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_unit_test_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert findings == []
 
 
 def test_returns_none_when_no_relevant_tool_results(db_session):

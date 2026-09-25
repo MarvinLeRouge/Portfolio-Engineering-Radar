@@ -31,6 +31,9 @@ class PytestCoverageRunner:
             requirements = target_path / "requirements.txt"
             if requirements.exists():
                 command.extend(["--with-requirements", str(requirements)])
+            requirements_dev = target_path / "requirements-dev.txt"
+            if requirements_dev.exists():
+                command.extend(["--with-requirements", str(requirements_dev)])
             command.append("pytest")
             command.extend(
                 [
