@@ -21,6 +21,7 @@ from radar_audit.runners.gitleaks_runner import GitleaksRunner
 from radar_audit.runners.hadolint_runner import HadolintRunner
 from radar_audit.runners.integration_test_runner import IntegrationTestRunner
 from radar_audit.runners.jscpd_runner import JscpdRunner
+from radar_audit.runners.knip_runner import KnipRunner
 from radar_audit.runners.mypy_runner import MypyRunner
 from radar_audit.runners.pest_runner import PestRunner
 from radar_audit.runners.phpmd_complexity_runner import PhpmdComplexityRunner
@@ -65,6 +66,7 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     VultureRunner(),
     PreCommitGateRunner(),
     JscpdRunner(),
+    KnipRunner(),
     PytestCoverageRunner(),
     VitestRunner(),
     PestRunner(),
