@@ -8,6 +8,8 @@ _DEAD_CODE_MODULE = (
     "def add(a, b):\n" "    return a + b\n" "\n" "def unused_helper():\n" "    return 42\n"
 )
 
+_UNREACHABLE_CODE_MODULE = "def f():\n" "    return 1\n" "    print('dead')\n"
+
 _CLI_ENTRYPOINT_MODULE = (
     "import typer\n"
     "\n"
@@ -39,6 +41,17 @@ def test_reports_a_finding_for_an_unused_function(tmp_path):
 
     findings = result.raw_output["findings"]
     assert any(f["name"] == "unused_helper" for f in findings)
+
+
+def test_reports_a_finding_for_unreachable_code(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/a.py": _UNREACHABLE_CODE_MODULE})
+
+    runner = VultureRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[])
+
+    findings = result.raw_output["findings"]
+    assert any(f["kind"] == "unreachable_code" and f["name"] is None for f in findings)
 
 
 def test_ignores_typer_command_decorated_entrypoints(tmp_path):
