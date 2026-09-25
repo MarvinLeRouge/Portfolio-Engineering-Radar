@@ -147,6 +147,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Rescue crashed test runs with usable junit data
 - *(radar-audit)* Exclude vendor directory from EslintComplexityRunner
 - *(radar-audit)* Exclude vendor directory from DependencyCruiserRunner
+- *(radar-audit)* Parse real knip duplicates/files shapes and skip unusable knip payloads
 
 ### 🚜 Refactor
 

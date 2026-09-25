@@ -14,7 +14,7 @@ _USABLE_EXIT_CODES_BY_TOOL = {
     "knip": {0, 1},
     "phpmd-codesize": {0, 2},
 }
-_KNIP_DEAD_CODE_CATEGORIES = ("exports", "types", "enumMembers", "duplicates")
+_KNIP_UNUSED_SYMBOL_CATEGORIES = ("exports", "types", "enumMembers")
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (3, 8.0), (8, 6.0), (15, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
 
@@ -26,7 +26,9 @@ def normalize_dead_code(
     tool_results: list[ToolResult],
 ) -> Score | None:
     relevant = [
-        r for r in tool_results if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set())
+        r
+        for r in tool_results
+        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL.get(r.tool_name, set()) and _is_usable(r)
     ]
     if not relevant:
         return None
@@ -83,24 +85,7 @@ def _extract_items(tool_result: ToolResult) -> list[dict[str, Any]]:
             for f in tool_result.raw_output.get("findings", [])
         ]
     if tool_result.tool_name == "knip":
-        items = []
-        for issue in tool_result.raw_output.get("issues", []):
-            file_name = issue.get("file")
-            for category in _KNIP_DEAD_CODE_CATEGORIES:
-                for entry in issue.get(category, []):
-                    category_name = category[:-1] if category.endswith("s") else category
-                    items.append(
-                        {
-                            "description": f"unused {category_name} '{entry.get('name')}'",
-                            "file": file_name,
-                            "line": entry.get("line"),
-                        }
-                    )
-        items.extend(
-            {"description": f"unused file '{f}'", "file": f}
-            for f in tool_result.raw_output.get("files", [])
-        )
-        return items
+        return _extract_knip_items(tool_result.raw_output["issues"])
     return [
         {
             "description": f"{v.get('rule', 'unused code')}: {v.get('message', '')}",
@@ -110,6 +95,55 @@ def _extract_items(tool_result: ToolResult) -> list[dict[str, Any]]:
         for v in tool_result.raw_output.get("violations", [])
         if v.get("ruleset") == "unusedcode"
     ]
+
+
+def _extract_knip_items(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flatten knip 6.x per-file issue rows into dead-code items.
+
+    Each row carries its own `files` (the row's file is fully unused), plus
+    `exports`/`types`/`enumMembers` lists of objects. `duplicates` is a list
+    of groups, each group a list of objects, and counts as one item per group.
+    """
+    items: list[dict[str, Any]] = []
+    for issue in issues:
+        file_name = issue.get("file")
+        items.extend(
+            {"description": f"unused file '{entry.get('name')}'", "file": entry.get("name")}
+            for entry in issue.get("files", [])
+        )
+        for category in _KNIP_UNUSED_SYMBOL_CATEGORIES:
+            category_name = category[:-1] if category.endswith("s") else category
+            items.extend(
+                {
+                    "description": f"unused {category_name} '{entry.get('name')}'",
+                    "file": file_name,
+                    "line": entry.get("line"),
+                }
+                for entry in issue.get(category, [])
+            )
+        for group in issue.get("duplicates", []):
+            if not group:
+                continue
+            names = ", ".join(f"'{entry.get('name')}'" for entry in group)
+            items.append(
+                {
+                    "description": f"duplicate exports {names}",
+                    "file": file_name,
+                    "line": group[0].get("line"),
+                }
+            )
+    return items
+
+
+def _is_usable(tool_result: ToolResult) -> bool:
+    """Tell whether a tool result carries real data rather than a fallback payload.
+
+    Knip's runner falls back to `{"stdout", "stderr"}` when npx fails, output
+    is unparsable, or no entry point exists; that must not score as clean.
+    """
+    if tool_result.tool_name == "knip":
+        return "issues" in tool_result.raw_output
+    return True
 
 
 def _band_value(item_count: int) -> float:

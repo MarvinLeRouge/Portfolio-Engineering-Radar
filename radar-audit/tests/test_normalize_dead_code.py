@@ -228,3 +228,94 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_dead_code(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def _raw_knip_result(audit, raw_output, exit_code=1):
+    return ToolResult(
+        audit_id=audit.id,
+        tool_name="knip",
+        tool_version="1.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output=raw_output,
+        exit_code=exit_code,
+        duration_ms=10,
+    )
+
+
+def test_counts_each_knip_duplicate_group_as_one_item_without_crashing(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # Real knip 6.x shape: "duplicates" is a list of groups, each group a list of objects.
+    tool_result = _raw_knip_result(
+        audit,
+        {
+            "issues": [
+                {
+                    "file": "src/a.js",
+                    "duplicates": [[{"name": "used", "line": 3}, {"name": "default", "line": 3}]],
+                }
+            ]
+        },
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 8.0  # 1 duplicate group
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].description == "duplicate exports 'used', 'default'"
+    assert findings[0].file == "src/a.js"
+    assert findings[0].line == 3
+
+
+def test_counts_knip_unused_files_reported_per_issue_row(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # Real knip 6.x shape: unused files sit inside each issue row, not at the top level.
+    tool_result = _raw_knip_result(
+        audit,
+        {"issues": [{"file": "src/orphan.js", "files": [{"name": "src/orphan.js"}]}]},
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 8.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert [f.description for f in findings] == ["unused file 'src/orphan.js'"]
+    assert findings[0].file == "src/orphan.js"
+
+
+def test_returns_none_when_knip_result_has_no_issues_key(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    # Fallback shape (npx failure, unparsable output, or no entry point): no usable data.
+    tool_result = _raw_knip_result(audit, {"stdout": "", "stderr": "npm ERR! network"})
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_unusable_knip_result_does_not_mask_another_tools_score(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    unusable = _raw_knip_result(audit, {"stdout": "", "stderr": ""}, exit_code=0)
+    bad_result = _vulture_result(audit, 4, exit_code=3)
+    db_session.add(unusable)
+    db_session.add(bad_result)
+    db_session.commit()
+
+    score = normalize_dead_code(db_session, scoring_run, criterion, [unusable, bad_result])
+
+    assert score is not None
+    assert score.value == 6.0
+    assert score.confidence == Confidence.MEDIUM
