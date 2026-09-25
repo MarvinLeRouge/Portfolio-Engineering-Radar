@@ -15,6 +15,11 @@ _COMPLEX_METHOD = (
     + "        return -1;\n    }\n}\n"
 )
 
+_UNUSED_VARIABLE_METHOD = (
+    "<?php\n\nclass A\n{\n    public function compute(): int\n    {\n"
+    "        $unused = 42;\n        return 1;\n    }\n}\n"
+)
+
 
 @pytest.mark.slow
 def test_reports_no_violations_on_a_simple_method(tmp_path):
@@ -70,3 +75,24 @@ def test_reports_tool_identity():
     assert runner.tool_name == "phpmd-codesize"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"php"})
+
+
+@pytest.mark.slow
+def test_tags_codesize_and_unusedcode_violations_separately(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/A.php": _COMPLEX_METHOD,
+            "src/B.php": _UNUSED_VARIABLE_METHOD,
+        },
+    )
+
+    runner = PhpmdComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    violations = result.raw_output["violations"]
+    codesize = [v for v in violations if v["ruleset"] == "codesize"]
+    unusedcode = [v for v in violations if v["ruleset"] == "unusedcode"]
+    assert codesize and all("complexity" in v for v in codesize)
+    assert unusedcode and all(v.get("rule") == "UnusedLocalVariable" for v in unusedcode)

@@ -89,6 +89,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Register category 4 runners and normalizers
 - *(radar-audit)* Dispatch dependency audit to npm when package-lock.json is present
 - *(radar-audit)* Dispatch dependency audit to yarn when yarn.lock is present
+- *(radar-audit)* Extend PhpmdComplexityRunner to tag codesize/unusedcode violations
 
 ### 🐛 Bug Fixes
 

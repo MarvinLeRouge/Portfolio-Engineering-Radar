@@ -169,7 +169,11 @@ def test_counts_phpmd_codesize_result_with_exit_code_two(db_session):
         tool_version="1.0.0",
         subproject_path="backend",
         command="stub",
-        raw_output={"violations": [{"file": "src/a.php", "line": 18, "complexity": 12}]},
+        raw_output={
+            "violations": [
+                {"ruleset": "codesize", "file": "src/a.php", "line": 18, "complexity": 12}
+            ]
+        },
         exit_code=2,
         duration_ms=10,
     )
@@ -192,7 +196,11 @@ def test_ignores_phpmd_codesize_result_with_exit_code_one(db_session):
         tool_version="1.0.0",
         subproject_path="backend",
         command="stub",
-        raw_output={"violations": [{"file": "src/a.php", "line": 18, "complexity": 12}]},
+        raw_output={
+            "violations": [
+                {"ruleset": "codesize", "file": "src/a.php", "line": 18, "complexity": 12}
+            ]
+        },
         exit_code=1,
         duration_ms=10,
     )

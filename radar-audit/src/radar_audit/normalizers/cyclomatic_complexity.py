@@ -123,4 +123,5 @@ def _extract_blocks(tool_result: ToolResult) -> list[dict[str, Any]]:
     return [
         {"complexity": v["complexity"], "name": None, "file": v["file"], "line": v["line"]}
         for v in tool_result.raw_output.get("violations", [])
+        if v.get("ruleset") == "codesize"
     ]
