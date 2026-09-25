@@ -148,6 +148,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude vendor directory from EslintComplexityRunner
 - *(radar-audit)* Exclude vendor directory from DependencyCruiserRunner
 - *(radar-audit)* Parse real knip duplicates/files shapes and skip unusable knip payloads
+- *(radar-audit)* Honor exclude_paths in KnipRunner and flag missing entry point as unusable
 
 ### 🚜 Refactor
 

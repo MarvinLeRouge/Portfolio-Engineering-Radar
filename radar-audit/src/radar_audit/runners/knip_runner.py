@@ -19,6 +19,18 @@ _DEFAULT_ENTRY_CANDIDATES = (
 _JSON_PREFIX = '{"issues"'
 
 
+def _ignore_patterns(target_path: Path, exclude_paths: list[Path]) -> list[str]:
+    """Translate excluded paths under `target_path` into knip `ignore` globs."""
+    patterns = []
+    for excluded in exclude_paths:
+        try:
+            relative = excluded.relative_to(target_path)
+        except ValueError:
+            continue  # not under target_path, skip
+        patterns.append("**" if relative == Path(".") else f"{relative}/**")
+    return patterns
+
+
 class KnipRunner:
     """Runs knip's unused-exports detection with audit-owned config (criterion 5.2, JS)."""
 
@@ -31,9 +43,11 @@ class KnipRunner:
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         entries = [c for c in _DEFAULT_ENTRY_CANDIDATES if (target_path / c).exists()]
         if not entries:
+            # No `issues` key: knip never analyzed anything, so the normalizer
+            # must treat this as no data rather than as a clean result.
             return RawToolOutput(
                 command="",
-                raw_output={"issues": []},
+                raw_output={"stdout": "", "stderr": "no entry point candidate found"},
                 exit_code=0,
                 duration_ms=0,
             )
@@ -41,7 +55,10 @@ class KnipRunner:
         with tempfile.NamedTemporaryFile(
             "w", suffix=".json", delete=False, dir=target_path
         ) as config_file:
-            json.dump({"entry": entries}, config_file)
+            json.dump(
+                {"entry": entries, "ignore": _ignore_patterns(target_path, exclude_paths)},
+                config_file,
+            )
             config_path = Path(config_file.name)
 
         try:
